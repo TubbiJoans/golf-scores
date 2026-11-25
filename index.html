@@ -70,6 +70,7 @@ table.sc{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 12px}
 .panel{background:var(--card);border-radius:14px;padding:14px;box-shadow:0 1px 0 var(--line);margin-bottom:12px}
 label{font-size:13px;color:var(--mut);font-weight:500}
 select,input{width:100%;min-height:46px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:#fff;font-size:16px}
+input.filled{background:#fff6c2;transition:background .3s}
 input:focus,select:focus,button:focus-visible{outline:3px solid #9ad3b4;outline-offset:1px}
 .btn{border:0;border-radius:12px;min-height:48px;padding:10px 16px;font-weight:700;background:var(--g);color:#fff;cursor:pointer}
 .btn.ghost{background:var(--g3);color:var(--g)}
@@ -100,6 +101,8 @@ input:focus,select:focus,button:focus-visible{outline:3px solid #9ad3b4;outline-
 .pair .full input{flex:1}
 .x{flex:none;width:46px;border:0;border-radius:10px;background:#fde8ea;color:#a01826;font-size:20px;cursor:pointer}
 .course{border-collapse:collapse;width:100%}
+.prow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) 72px 46px;gap:6px;padding:5px 0}
+details.panel>summary{list-style:none}details.panel>summary::before{content:"▸ ";color:var(--g)}details[open].panel>summary::before{content:"▾ "}
 .course td,.course th{padding:3px;text-align:center;font-size:13px;color:var(--mut)}
 .course input{min-width:44px;padding:6px 2px;text-align:center}
 h2.sec{font:700 22px "Barlow Condensed",system-ui,sans-serif;margin:0 0 8px}
@@ -145,11 +148,12 @@ const firebaseConfig = {
 const SDK='https://www.gstatic.com/firebasejs/10.12.2/';
 const EMAIL='scorer@sifah.golf';
 const DEF={title:'Pairs 3-3-3 Stableford',course:'Jebel Sifah · Front 9',par:[4,4,5,4,5,3,4,3,4],si:[13,1,5,15,9,11,3,17,7],pairs:[]};
+const ROSTER=[["Abs", "Al Balushi", 28], ["Adrian", "Clifford", 28], ["Alan", "Hill", 26.2], ["Bradley", "Viljoen", 19], ["Chris", "MacDonald", 22], ["Elizabeth", "Shearer", 36], ["Emma", "Fenton", 36], ["Fiona", "Hanks", 36], ["Frans", "Kohler", 22], ["Freek", "van Dijk", 28], ["Gay", "Clifford", 36], ["Gerry", "Woods", 10], ["Heiderose", "Mossen", 31], ["Hudson", "Kemp", 14], ["Iain", "Watford", 23], ["Jaime", "Kemp", 36], ["James", "Thompson", 15], ["Jenna", "Viljoen", 36], ["Johnny", "Agapie", 28], ["Neil", "McLoughlin", 28], ["Ninien", "Blignault", 30], ["Petra", "Markt", 31.4], ["Saif", "Al Abdullatif", 28], ["Sheldon", "Kemp", 18], ["Stephen", "Martin", 28], ["Tim", "Fenton", 10], ["Vanessa", "Jackson", 21], ["Willie", "Fourie", 28], ["Yvonne", "Grant", 30], ["Jonathan", "Grant", 25], ["Ben", "Martin", 28], ["Mark", "Geilenkirchen", 28], ["Esther", "Grootenboer", 28], ["Erwen", "De La Cruz", 18], ["Fred", "van Nieuwenhuizen", 28], ["Brian", "Wilson", 26], ["Jenny", "Wilson", 36], ["Ed", "Price", 28], ["Jan-Willen", "van Lienden", 18.5], ["Kamil", "Weinhold", 28], ["Gina", "Sanda", 25], ["Cristian", "Sanda", 15], ["Chantal", "Vlaarkamp", 36], ["Chon", "Humtsoe", 22]];
 const FMT=[{n:'Shamble',c:'var(--f0)',d:'75% each · both scores count'},{n:'Greensomes',c:'var(--f1)',d:'60% low + 40% high'},{n:'Scramble',c:'var(--f2)',d:'35% low + 15% high'}];
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ls={get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
-let R=structuredClone(DEF),S={},user=null,view='board',fs=null,au=null,db=null,auth=null,setupDirty=false;
+let P=ROSTER.map(([n,l,h])=>({n,l,h})),R=structuredClone(DEF),S={},user=null,view='board',fs=null,au=null,db=null,auth=null,setupDirty=false;
 const LOCAL=!firebaseConfig;
 
 function toast(t){const e=$('toast');e.textContent=t;e.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('show'),2200)}
@@ -221,9 +225,14 @@ function renderSetup(){
   el.innerHTML=`<div class="panel"><h2 class="sec">Round</h2><div class="row">
     <div><label for="t-title">Title</label><input id="t-title" value="${esc(R.title)}"></div>
     <div><label for="t-course">Course</label><input id="t-course" value="${esc(R.course)}"></div></div></div>
-  <div class="panel"><h2 class="sec">Pairs</h2><p class="note" style="margin:0">Enter normal 18-hole handicaps. The app halves them for 9 holes and applies each format's %. Plus handicaps: enter as negative (+2 → −2).</p>
+  <div class="panel"><h2 class="sec">Pairs</h2><p class="note" style="margin:0">Start typing a player's name and pick them from the list. Their handicap fills in automatically. Use normal 18-hole handicaps; the app halves them for 9 holes and applies each format's %. Plus handicaps: enter as negative (+2 → −2).</p>
+    <datalist id="roster">${[...P].sort((a,b)=>a.n.localeCompare(b.n)).map(p=>`<option value="${esc(p.n)}">${esc(p.n+' '+p.l+' · '+p.h)}</option>`).join('')}</datalist>
     <div id="pairs">${R.pairs.map(pairRow).join('')}</div>
     <button class="btn ghost" id="addp" type="button" style="width:100%;margin-top:6px">+ Add pair</button></div>
+  <details class="panel"><summary class="sec" style="cursor:pointer">Players &amp; handicaps (${P.length})</summary>
+    <p class="note">Update a handicap here once and it fills in automatically from then on. Changes don't alter pairs already saved: re-pick the name to refresh.</p>
+    <div id="players">${[...P].sort((a,b)=>a.n.localeCompare(b.n)).map(playerRow).join('')}</div>
+    <div class="row" style="margin-top:8px"><button class="btn ghost" id="addpl" type="button">+ Add player</button><button class="btn" id="savep" type="button">Save players</button></div></details>
   <div class="panel"><h2 class="sec">Course card</h2><div class="scroll"><table class="course"><tr><th></th>${[...Array(9)].map((_,i)=>`<th>${i+1}</th>`).join('')}</tr>
     <tr><th>Par</th>${R.par.map((v,i)=>`<td><input inputmode="numeric" data-par="${i}" value="${esc(v)}" aria-label="Par hole ${i+1}"></td>`).join('')}</tr>
     <tr><th>SI</th>${R.si.map((v,i)=>`<td><input inputmode="numeric" data-si="${i}" value="${esc(v)}" aria-label="Stroke index hole ${i+1}"></td>`).join('')}</tr></table></div>
@@ -235,9 +244,15 @@ function renderSetup(){
 }
 const pairRow=p=>`<div class="pair" data-id="${esc(p.id)}">
   <div class="full"><input data-f="name" placeholder="Team name (optional)" value="${esc(p.name||'')}"><button class="x" type="button" data-rm aria-label="Remove pair">×</button></div>
-  <input data-f="p1" placeholder="Player 1" value="${esc(p.p1||'')}"><input data-f="h1" inputmode="decimal" placeholder="H'cap" value="${esc(p.h1??'')}">
-  <input data-f="p2" placeholder="Player 2" value="${esc(p.p2||'')}"><input data-f="h2" inputmode="decimal" placeholder="H'cap" value="${esc(p.h2??'')}"></div>`;
+  <input data-f="p1" list="roster" autocomplete="off" placeholder="Player 1" value="${esc(p.p1||'')}"><input data-f="h1" inputmode="decimal" placeholder="H'cap" value="${esc(p.h1??'')}">
+  <input data-f="p2" list="roster" autocomplete="off" placeholder="Player 2" value="${esc(p.p2||'')}"><input data-f="h2" inputmode="decimal" placeholder="H'cap" value="${esc(p.h2??'')}"></div>`;
 const newId=()=>Math.random().toString(36).slice(2,9);
+const findP=v=>{v=String(v||'').trim().toLowerCase().replace(/\s+/g,' ');return v&&P.find(p=>p.n.toLowerCase()===v||(p.n+' '+p.l).toLowerCase()===v)};
+const playerRow=p=>`<div class="prow"><input data-pn value="${esc(p.n||'')}" placeholder="First name" aria-label="First name"><input data-pl value="${esc(p.l||'')}" placeholder="Surname" aria-label="Surname"><input data-ph inputmode="decimal" value="${esc(p.h??'')}" placeholder="H'cap" aria-label="Handicap"><button class="x" type="button" data-prm aria-label="Remove player">×</button></div>`;
+async function savePlayers(list){
+  if(LOCAL){P=list;ls.set('gs-demo-P',P);return}
+  await fs.setDoc(fs.doc(db,'rounds','roster'),{players:list});
+}
 
 // ---------- data writes ----------
 async function saveRound(data){
@@ -268,10 +283,16 @@ $('v-score').addEventListener('click',e=>{const b=e.target.closest('button[data-
   const pid=$('pairsel').value,k=b.dataset.k,h=parseInt(k),par=+R.par[h-1]||4,cur=S[pid]?.[k];let v;
   if(+b.dataset.d>0)v=cur==null?par:cur===0?1:Math.min(cur+1,15);else v=cur==null?null:cur===0?null:cur===1?0:cur-1;
   if(v!==(cur??null))setScore(pid,k,v)});
-$('v-setup').addEventListener('input',e=>{if(e.target.id!=='pin')setupDirty=true});
+$('v-setup').addEventListener('input',e=>{const t=e.target;if(t.id==='pin')return;setupDirty=true;
+  const f=t.dataset.f;if(f==='p1'||f==='p2'){const m=findP(t.value);if(m){const h=t.closest('.pair').querySelector(`[data-f=h${f[1]}]`);h.value=m.h;h.classList.add('filled');setTimeout(()=>h.classList.remove('filled'),900)}}});
+$('v-setup').addEventListener('change',e=>{const t=e.target,f=t.dataset.f;if(f==='p1'||f==='p2'){const m=findP(t.value);if(m)t.value=m.n}});
 $('v-setup').addEventListener('click',async e=>{const t=e.target;
   if(t.id==='addp'){$('pairs').insertAdjacentHTML('beforeend',pairRow({id:newId()}));setupDirty=true}
   else if(t.matches('[data-rm]')){t.closest('.pair').remove();setupDirty=true}
+  else if(t.id==='addpl'){$('players').insertAdjacentHTML('beforeend',playerRow({}));setupDirty=true}
+  else if(t.matches('[data-prm]')){t.closest('.prow').remove();setupDirty=true}
+  else if(t.id==='savep'){const list=[...document.querySelectorAll('.prow')].map(r=>({n:r.querySelector('[data-pn]').value.trim(),l:r.querySelector('[data-pl]').value.trim(),h:parseFloat(r.querySelector('[data-ph]').value.replace('+','-'))||0})).filter(p=>p.n);
+    try{t.disabled=true;await savePlayers(list);P=list;toast('Players saved')}catch(err){toast('Not saved: '+(err.code||err.message))}finally{t.disabled=false}}
   else if(t.id==='save'){const pairs=[...document.querySelectorAll('.pair')].map(r=>{const o={id:r.dataset.id};
       r.querySelectorAll('[data-f]').forEach(i=>{const f=i.dataset.f,v=i.value.trim();o[f]=f[0]==='h'?(v===''?0:parseFloat(v.replace('+','-'))||0):v});return o});
     const par=[...document.querySelectorAll('[data-par]')].map(i=>parseInt(i.value)||4),si=[...document.querySelectorAll('[data-si]')].map(i=>parseInt(i.value)||0);
@@ -287,7 +308,7 @@ $('v-setup').addEventListener('click',async e=>{const t=e.target;
 async function start(){
   if(LOCAL){
     $('banner').innerHTML=`<div class="banner"><b>Demo mode.</b> Not connected to Firebase yet. Anything entered stays on this phone only. Any PIN unlocks.</div>`;
-    net('demo');R={...structuredClone(DEF),...ls.get('gs-demo-R',{})};S=ls.get('gs-demo-S',{});render();return}
+    net('demo');R={...structuredClone(DEF),...ls.get('gs-demo-R',{})};S=ls.get('gs-demo-S',{});P=ls.get('gs-demo-P',P);render();return}
   try{
     const [appM,fsM,auM]=await Promise.all([import(SDK+'firebase-app.js'),import(SDK+'firebase-firestore.js'),import(SDK+'firebase-auth.js')]);
     fs=fsM;au=auM;const app=appM.initializeApp(firebaseConfig);
@@ -295,6 +316,7 @@ async function start(){
     auth=au.getAuth(app);
     au.onAuthStateChanged(auth,u=>{user=u;render()});
     const slow=setTimeout(()=>net('off'),10000);
+    fs.onSnapshot(fs.doc(db,'rounds','roster'),s=>{const d=s.exists()&&s.data().players;if(Array.isArray(d)&&d.length){P=d;render()}},()=>{});
     fs.onSnapshot(fs.doc(db,'rounds','current'),{includeMetadataChanges:true},s=>{
       if(s.exists())R={...structuredClone(DEF),...s.data()};
       if(!s.metadata.fromCache){clearTimeout(slow);net('live')}render()},e=>{net('off');toast('Cannot load round: '+e.code)});
