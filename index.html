@@ -146,7 +146,8 @@ const firebaseConfig = {
 // ======================================================================
 {
 const SDK='https://www.gstatic.com/firebasejs/10.12.2/';
-const EMAIL='scorer@sifah.golf';
+const EMAIL='scorer@sifah.golf',ADMIN='admin@sifah.golf';
+const isAdmin=()=>!!user&&user.email===ADMIN;
 const DEF={title:'Pairs 3-3-3 Stableford',course:'Jebel Sifah · Front 9',par:[4,4,5,4,5,3,4,3,4],si:[13,1,5,15,9,11,3,17,7],pairs:[]};
 const ROSTER=[["Abs", "Al Balushi", 28], ["Adrian", "Clifford", 28], ["Alan", "Hill", 26.2], ["Bradley", "Viljoen", 19], ["Chris", "MacDonald", 22], ["Elizabeth", "Shearer", 36], ["Emma", "Fenton", 36], ["Fiona", "Hanks", 36], ["Frans", "Kohler", 22], ["Freek", "van Dijk", 28], ["Gay", "Clifford", 36], ["Gerry", "Woods", 10], ["Heiderose", "Mossen", 31], ["Hudson", "Kemp", 14], ["Iain", "Watford", 23], ["Jaime", "Kemp", 36], ["James", "Thompson", 15], ["Jenna", "Viljoen", 36], ["Johnny", "Agapie", 28], ["Neil", "McLoughlin", 28], ["Ninien", "Blignault", 30], ["Petra", "Markt", 31.4], ["Saif", "Al Abdullatif", 28], ["Sheldon", "Kemp", 18], ["Stephen", "Martin", 28], ["Tim", "Fenton", 10], ["Vanessa", "Jackson", 21], ["Willie", "Fourie", 28], ["Yvonne", "Grant", 30], ["Jonathan", "Grant", 25], ["Ben", "Martin", 28], ["Mark", "Geilenkirchen", 28], ["Esther", "Grootenboer", 28], ["Erwen", "De La Cruz", 18], ["Fred", "van Nieuwenhuizen", 28], ["Brian", "Wilson", 26], ["Jenny", "Wilson", 36], ["Ed", "Price", 28], ["Jan-Willen", "van Lienden", 18.5], ["Kamil", "Weinhold", 28], ["Gina", "Sanda", 25], ["Cristian", "Sanda", 15], ["Chantal", "Vlaarkamp", 36], ["Chon", "Humtsoe", 22]];
 const FMT=[{n:'Shamble',c:'var(--f0)',d:'75% each · both scores count'},{n:'Greensomes',c:'var(--f1)',d:'60% low + 40% high'},{n:'Scramble',c:'var(--f2)',d:'35% low + 15% high'}];
@@ -202,8 +203,8 @@ function renderBoard(){
     </details></li>`}).join('')}</ol>
     <div class="legend">${FMT.map((f,k)=>`<span style="--c:${f.c}">Holes ${k*3+1}–${k*3+3} ${f.n}</span>`).join('')}</div>`;
 }
-function pinForm(msg){return `<div class="panel"><h2 class="sec">Scorer sign-in</h2><p class="note" style="margin:0 0 10px">${msg}</p>
-  <form id="pinf" class="row"><div><label for="pin">Round PIN</label><input id="pin" type="password" autocomplete="current-password" required></div><button class="btn" style="flex:0 0 auto">Unlock</button></form></div>`}
+function pinForm(msg,role='scorer'){const a=role==='admin';return `<div class="panel"><h2 class="sec">${a?'Organiser sign-in':'Scorer sign-in'}</h2><p class="note" style="margin:0 0 10px">${msg}</p>
+  <form class="row pinf" data-role="${role}"><div><label for="pin-${role}">${a?'Admin password':'Round PIN'}</label><input id="pin-${role}" type="password" autocomplete="current-password" required></div><button class="btn" style="flex:0 0 auto">Unlock</button></form></div>`}
 function renderScore(){
   const el=$('v-score');
   if(!user){el.innerHTML=pinForm('Enter the PIN to record scores. Anyone can view the leaderboard without it.');return}
@@ -220,7 +221,7 @@ function renderScore(){
 }
 function renderSetup(){
   const el=$('v-setup');
-  if(!user){el.innerHTML=pinForm('Enter the PIN to set up the round.');return}
+  if(!isAdmin()){el.innerHTML=pinForm('Setup is for organisers only: pairs, handicaps, players and clearing scores. The scorer PIN does not open it.','admin');return}
   setupDirty=false;
   el.innerHTML=`<div class="panel"><h2 class="sec">Round</h2><div class="row">
     <div><label for="t-title">Title</label><input id="t-title" value="${esc(R.title)}"></div>
@@ -240,7 +241,7 @@ function renderSetup(){
   <button class="btn" id="save" type="button" style="width:100%">Save setup</button>
   <div class="panel" style="margin-top:16px"><h2 class="sec">Other</h2><div class="row">
     <button class="btn warn" id="clear" type="button">Clear all scores</button>
-    <button class="btn ghost" id="out" type="button">Lock (sign out)</button></div></div>`;
+    <button class="btn ghost" id="out" type="button">Lock (sign out)</button></div><p class="note">Signed in as organiser. You can also enter scores.</p><div></div></div>`;
 }
 const pairRow=p=>`<div class="pair" data-id="${esc(p.id)}">
   <div class="full"><input data-f="name" placeholder="Team name (optional)" value="${esc(p.name||'')}"><button class="x" type="button" data-rm aria-label="Remove pair">×</button></div>
@@ -273,17 +274,17 @@ document.querySelector('.tabs').addEventListener('click',e=>{const b=e.target.cl
   view=b.dataset.v;document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));
   for(const v of['board','score','setup'])$('v-'+v).hidden=v!==view;setupDirty=false;render();scrollTo(0,0)});
 let leaveArmed=0;function confirmLeave(){if(Date.now()-leaveArmed<3000)return true;leaveArmed=Date.now();toast('Unsaved setup changes — tap again to leave');return false}
-document.addEventListener('submit',async e=>{if(e.target.id!=='pinf')return;e.preventDefault();const pin=$('pin').value;
+document.addEventListener('submit',async e=>{const fm=e.target;if(!fm.classList.contains('pinf'))return;e.preventDefault();const pin=fm.querySelector('input').value,admin=fm.dataset.role==='admin';
   setupDirty=false;
-  if(LOCAL){user={demo:1};render();return}
-  try{await au.signInWithEmailAndPassword(auth,EMAIL,pin.trim());toast('Unlocked')}catch(err){const c=err&&err.code||'';
-    toast(/invalid-credential|wrong-password|user-not-found|invalid-login/.test(c)?'Wrong PIN ('+c.replace('auth/','')+')':'Sign-in problem: '+(c||err.message))}});
+  if(LOCAL){user={demo:1,email:admin?ADMIN:EMAIL};render();return}
+  try{await au.signInWithEmailAndPassword(auth,admin?ADMIN:EMAIL,pin.trim());toast(admin?'Organiser unlocked':'Unlocked')}catch(err){const c=err&&err.code||'';
+    toast(/invalid-credential|wrong-password|user-not-found|invalid-login/.test(c)?(admin?'Wrong admin password (':'Wrong PIN (')+c.replace('auth/','')+')':'Sign-in problem: '+(c||err.message))}});
 $('v-score').addEventListener('change',e=>{if(e.target.id==='pairsel'){ls.set('gs-pair',e.target.value);render()}});
 $('v-score').addEventListener('click',e=>{const b=e.target.closest('button[data-k]');if(!b)return;
   const pid=$('pairsel').value,k=b.dataset.k,h=parseInt(k),par=+R.par[h-1]||4,cur=S[pid]?.[k];let v;
   if(+b.dataset.d>0)v=cur==null?par:cur===0?1:Math.min(cur+1,15);else v=cur==null?null:cur===0?null:cur===1?0:cur-1;
   if(v!==(cur??null))setScore(pid,k,v)});
-$('v-setup').addEventListener('input',e=>{const t=e.target;if(t.id==='pin')return;setupDirty=true;
+$('v-setup').addEventListener('input',e=>{const t=e.target;if(t.closest('.pinf'))return;setupDirty=true;
   const f=t.dataset.f;if(f==='p1'||f==='p2'){const m=findP(t.value);if(m){const h=t.closest('.pair').querySelector(`[data-f=h${f[1]}]`);h.value=m.h;h.classList.add('filled');setTimeout(()=>h.classList.remove('filled'),900)}}});
 $('v-setup').addEventListener('change',e=>{const t=e.target,f=t.dataset.f;if(f==='p1'||f==='p2'){const m=findP(t.value);if(m)t.value=m.n}});
 $('v-setup').addEventListener('click',async e=>{const t=e.target;
