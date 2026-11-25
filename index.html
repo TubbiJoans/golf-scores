@@ -171,20 +171,26 @@ function net(state){const e=$('net');e.className='net '+(state==='live'?'live':s
 const fmtOf=h=>h<=3?0:h<=6?1:2;
 function ranks(si){const o=si.map((v,i)=>[+v||99,i]).sort((a,b)=>a[0]-b[0]);const r=[];o.forEach(([,i],k)=>r[i]=k+1);return r}
 function strokes(ph,r){if(ph>=0)return Math.floor(ph/9)+(r<=ph%9?1:0);const m=-ph;return -(Math.floor(m/9)+(r>9-m%9?1:0))}
-function phs(p){const a=(+p.h1||0)/2,b=(+p.h2||0)/2,lo=Math.min(a,b),hi=Math.max(a,b);
+const is3=p=>!!(p.p3&&String(p.p3).trim());
+function phs(p){const a=(+p.h1||0)/2,b=(+p.h2||0)/2,c=(+p.h3||0)/2;
+  if(is3(p)){const [lo,mid,hi]=[a,b,c].sort((x,y)=>x-y);
+    return{a:Math.round(.75*a),b:Math.round(.75*b),c:Math.round(.75*c),g:Math.round(.5*lo+.3*mid+.2*hi),s:Math.round(.3*lo+.2*mid+.1*hi)}}
+  const lo=Math.min(a,b),hi=Math.max(a,b);
   return{a:Math.round(.75*a),b:Math.round(.75*b),g:Math.round(.6*lo+.4*hi),s:Math.round(.35*lo+.15*hi)}}
-const pn=(p,k)=>(k==='a'?p.p1:p.p2)||(k==='a'?'Player 1':'Player 2');
-const teamName=p=>p.name||`${p.p1||'Player 1'} & ${p.p2||'Player 2'}`;
+const pn=(p,k)=>({a:p.p1,b:p.p2,c:p.p3}[k])||({a:'Player 1',b:'Player 2',c:'Player 3'}[k]);
+const teamName=p=>p.name||[p.p1||'Player 1',p.p2||'Player 2',...(is3(p)?[p.p3]:[])].join(' & ');
 function card(p){
-  const P=phs(p),rk=ranks(R.si),sc=S[p.id]||{};let tot=0,thru=0;const seg=[0,0,0],holes=[];
+  const P=phs(p),rk=ranks(R.si),sc=S[p.id]||{},three=is3(p);let tot=0,thru=0;const seg=[0,0,0],holes=[];
   for(let h=1;h<=9;h++){const i=h-1,par=+R.par[i]||4,f=fmtOf(h);
-    const rows=f===0?[['a',pn(p,'a'),P.a],['b',pn(p,'b'),P.b]]:[['',f===1?'Greensomes ball':'Scramble ball',f===1?P.g:P.s]];
-    let done=true,hp=0;
+    const rows=f===0?[['a',pn(p,'a'),P.a],['b',pn(p,'b'),P.b],...(three?[['c',pn(p,'c'),P.c]]:[])]:[['',f===1?'Greensomes ball':'Scramble ball',f===1?P.g:P.s]];
     const e=rows.map(([k,l,ph])=>{const key=h+k,g=sc[key],gross=(g===undefined||g===null)?null:+g,st=strokes(ph,rk[i]);
-      const pt=gross===null?null:gross===0?0:Math.max(0,par+2-(gross-st));
-      if(pt===null)done=false;else{tot+=pt;seg[f]+=pt;hp+=pt}return{key,label:l,ph,st,gross,pt}});
-    if(done)thru++;holes.push({h,par,si:R.si[i],f,e,done,hp:e.some(x=>x.pt!==null)?hp:null})}
-  return{P,tot,seg,thru,holes}}
+      const pt=gross===null?null:gross===0?0:Math.max(0,par+2-(gross-st));return{key,label:l,ph,st,gross,pt}});
+    const got=e.filter(x=>x.pt!==null),done=got.length===e.length;
+    let counted=got;
+    if(f===0&&three&&got.length===3){const low=[...got].sort((x,y)=>x.pt-y.pt)[0];low.drop=true;counted=got.filter(x=>x!==low)}
+    const hp=counted.reduce((a,x)=>a+x.pt,0);tot+=hp;seg[f]+=hp;
+    if(done)thru++;holes.push({h,par,si:R.si[i],f,e,done,hp:got.length?hp:null})}
+  return{P,tot,seg,thru,holes,three}}
 
 // ---------- rendering ----------
 function render(){
@@ -200,10 +206,10 @@ function renderBoard(){
     const {p,c}=r;
     return `<li><details data-id="${esc(p.id)}" ${open.has(p.id)?'open':''}><summary>
       <span class="pos">${rank}</span>
-      <span class="who"><b>${esc(teamName(p))}</b><small>${esc(p.p1||'')} ${esc(p.h1??'')} · ${esc(p.p2||'')} ${esc(p.h2??'')}</small></span>
+      <span class="who"><b>${esc(teamName(p))}</b><small>${esc(p.p1||'')} ${esc(p.h1??'')} · ${esc(p.p2||'')} ${esc(p.h2??'')}${c.three?` · ${esc(p.p3)} ${esc(p.h3??'')}`:''}</small></span>
       <span class="thru">${c.thru===9?'Finished':c.thru?'Thru '+c.thru:'Not started'}</span>
       <span class="pts">${c.tot}<small>pts</small></span></summary>
-      <div class="segs">${FMT.map((f,k)=>`<div class="seg" style="box-shadow:inset 0 3px 0 ${f.c}"><span>${f.n}</span><b>${c.seg[k]}</b><i>${k===0?`gets ${c.P.a} / ${c.P.b}`:`gets ${k===1?c.P.g:c.P.s}`}</i></div>`).join('')}</div>
+      <div class="segs">${FMT.map((f,k)=>`<div class="seg" style="box-shadow:inset 0 3px 0 ${f.c}"><span>${f.n}</span><b>${c.seg[k]}</b><i>${k===0?`gets ${c.P.a} / ${c.P.b}${c.three?' / '+c.P.c:''}`:`gets ${k===1?c.P.g:c.P.s}`}</i></div>`).join('')}</div>
       <div class="scroll"><table class="sc"><tr><th>Hole</th>${c.holes.map(h=>`<th class="dot${h.f}">${h.h}</th>`).join('')}<th>Tot</th></tr>
       <tr><td>Par</td>${c.holes.map(h=>`<td>${h.par}</td>`).join('')}<td>${c.holes.reduce((a,h)=>a+h.par,0)}</td></tr>
       <tr><td>Points</td>${c.holes.map(h=>`<td>${h.hp??'–'}</td>`).join('')}<td class="tot">${c.tot}</td></tr></table></div>
@@ -220,11 +226,11 @@ function renderScore(){
   const p=R.pairs.find(x=>x.id===mine),c=card(p);
   el.innerHTML=`<div class="panel"><label for="pairsel">Scoring for</label><select id="pairsel">${R.pairs.map(x=>`<option value="${esc(x.id)}" ${x.id===mine?'selected':''}>${esc(teamName(x))}</option>`).join('')}</select>
     <p class="note">Total <b>${c.tot} pts</b> · ${c.thru===9?'finished':'thru '+c.thru}. Tap + to start at par. Below 1 = pick-up (0 pts).</p></div>`+
-  c.holes.map(h=>(h.h%3===1?`<div class="segh" style="--c:${FMT[h.f].c}">${FMT[h.f].n} · holes ${h.h}–${h.h+2}<span>${c.seg[h.f]} pts</span></div>`:'')+
+  c.holes.map(h=>(h.h%3===1?`<div class="segh" style="--c:${FMT[h.f].c}">${FMT[h.f].n} · holes ${h.h}–${h.h+2}${h.f===0&&c.three?' · best 2 of 3 count':''}<span>${c.seg[h.f]} pts</span></div>`:'')+
    `<div class="hole" style="--c:${FMT[h.f].c}"><div class="hh"><b>Hole ${h.h}</b><span>Par ${h.par} · SI ${esc(h.si)}</span></div>${h.e.map(x=>`
     <div class="ent"><div class="nm">${esc(x.label)}<small>${x.st>0?`${x.st} shot${x.st>1?'s':''} here`:x.st<0?`gives ${-x.st} back`:'no shot'} · plays off ${x.ph}</small></div>
     <div class="step"><button data-k="${x.key}" data-d="-1" aria-label="Minus">−</button><output>${x.gross===null?'–':x.gross===0?'P/U':x.gross}</output><button data-k="${x.key}" data-d="1" aria-label="Plus">+</button></div>
-    <div class="pt ${x.pt===null?'none':''}"><b>${x.pt??'–'}</b><small>pts</small></div></div>`).join('')}</div>`).join('');
+    <div class="pt ${x.pt===null||x.drop?'none':''}"><b>${x.pt??'–'}</b><small>${x.drop?'not counted':'pts'}</small></div></div>`).join('')}</div>`).join('');
 }
 function renderSetup(){
   const el=$('v-setup');
@@ -260,7 +266,9 @@ function renderSetup(){
 const pairRow=p=>`<div class="pair" data-id="${esc(p.id)}">
   <div class="full"><input data-f="name" placeholder="Team name (optional)" value="${esc(p.name||'')}"><button class="x" type="button" data-rm aria-label="Remove pair">×</button></div>
   <input data-f="p1" list="roster" autocomplete="off" placeholder="Player 1" value="${esc(p.p1||'')}"><input data-f="h1" inputmode="decimal" placeholder="H'cap" value="${esc(p.h1??'')}">
-  <input data-f="p2" list="roster" autocomplete="off" placeholder="Player 2" value="${esc(p.p2||'')}"><input data-f="h2" inputmode="decimal" placeholder="H'cap" value="${esc(p.h2??'')}"></div>`;
+  <input data-f="p2" list="roster" autocomplete="off" placeholder="Player 2" value="${esc(p.p2||'')}"><input data-f="h2" inputmode="decimal" placeholder="H'cap" value="${esc(p.h2??'')}">
+  ${p.p3?p3Inputs(p):`<button class="btn ghost add3" type="button" data-add3 style="grid-column:1/-1;min-height:40px;padding:6px">+ 3rd player (odd numbers)</button>`}</div>`;
+const p3Inputs=p=>`<input data-f="p3" list="roster" autocomplete="off" placeholder="Player 3" value="${esc(p.p3||'')}"><input data-f="h3" inputmode="decimal" placeholder="H'cap" value="${esc(p.h3??'')}">`;
 const newId=()=>Math.random().toString(36).slice(2,9);
 const findP=v=>{v=String(v||'').trim().toLowerCase().replace(/\s+/g,' ');return v&&P.find(p=>p.n.toLowerCase()===v||(p.n+' '+p.l).toLowerCase()===v)};
 const playerRow=p=>`<div class="prow"><input data-pn value="${esc(p.n||'')}" placeholder="First name" aria-label="First name"><input data-pl value="${esc(p.l||'')}" placeholder="Surname" aria-label="Surname"><input data-ph inputmode="decimal" value="${esc(p.h??'')}" placeholder="H'cap" aria-label="Handicap"><button class="x" type="button" data-prm aria-label="Remove player">×</button></div>`;
@@ -271,9 +279,11 @@ function drawPairs(bal){let pl=shuffle(P.filter(p=>drawSel.has(p.n)));let left=n
   let pairs=[];
   if(bal){pl.sort((a,b)=>(+a.h||0)-(+b.h||0));const h=pl.length/2;for(let i=0;i<h;i++)pairs.push([pl[i],pl[pl.length-1-i]]);pairs=shuffle(pairs)}
   else for(let i=0;i<pl.length;i+=2)pairs.push([pl[i],pl[i+1]]);
+  if(left&&pairs.length){let k;if(bal){const sum=pr=>pr.reduce((a,x)=>a+(+x.h||0),0);k=pairs.reduce((bi,pr,i)=>Math.abs(sum(pr)/2-(+left.h||0))>Math.abs(sum(pairs[bi])/2-(+left.h||0))?i:bi,0)}else k=rnd(pairs.length);pairs[k].push(left);left=null}
   return{pairs,left}}
 function showDraft(){const el=$('dres');if(!el)return;if(!draft){el.innerHTML='';return}
-  el.innerHTML=draft.pairs.map((pr,i)=>`<div><span><b>Pair ${i+1}</b> &nbsp;${esc(pr[0].n)} &amp; ${esc(pr[1].n)}</span><span class="note" style="margin:0">${esc(pr[0].h)} · ${esc(pr[1].h)}</span></div>`).join('')+
+  el.innerHTML=draft.pairs.map((pr,i)=>`<div><span><b>${pr.length===3?'Three':'Pair'} ${i+1}</b> &nbsp;${pr.map(x=>esc(x.n)).join(' &amp; ')}</span><span class="note" style="margin:0">${pr.map(x=>esc(x.h)).join(' · ')}</span></div>`).join('')+
+  (draft.pairs.some(pr=>pr.length===3)?`<p class="note">Odd number, so one team of three. They count the best 2 of 3 scores on holes 1–3, with adjusted Greensomes and Scramble handicaps.</p>`:'')+
   (draft.left?`<p class="note" style="color:#a01826">Odd number: <b>${esc(draft.left.n)}</b> is left over. Tick one more player, or add them to a pair yourself below.</p>`:'')+
   `<div style="border:0;padding:0;gap:8px"><button class="btn ghost" id="dagain" type="button" style="flex:1">Draw again</button><button class="btn" id="duse" type="button" style="flex:1">Use these pairs</button></div>`}
 async function savePlayers(list){
@@ -315,14 +325,15 @@ $('v-setup').addEventListener('input',e=>{const t=e.target;if(t.closest('.pinf')
   if(t.dataset.dp!==undefined){t.checked?drawSel.add(t.dataset.dp):drawSel.delete(t.dataset.dp);ls.set('gs-draw',[...drawSel]);$('dcount').textContent=drawSel.size;return}
   if(t.id==='dbal')return;
   setupDirty=true;
-  const f=t.dataset.f;if(f==='p1'||f==='p2'){const m=findP(t.value);if(m){const h=t.closest('.pair').querySelector(`[data-f=h${f[1]}]`);h.value=m.h;h.classList.add('filled');setTimeout(()=>h.classList.remove('filled'),900)}}});
-$('v-setup').addEventListener('change',e=>{const t=e.target,f=t.dataset.f;if(f==='p1'||f==='p2'){const m=findP(t.value);if(m)t.value=m.n}});
+  const f=t.dataset.f;if(f==='p1'||f==='p2'||f==='p3'){const m=findP(t.value);if(m){const h=t.closest('.pair').querySelector(`[data-f=h${f[1]}]`);h.value=m.h;h.classList.add('filled');setTimeout(()=>h.classList.remove('filled'),900)}}});
+$('v-setup').addEventListener('change',e=>{const t=e.target,f=t.dataset.f;if(f==='p1'||f==='p2'||f==='p3'){const m=findP(t.value);if(m)t.value=m.n}});
 $('v-setup').addEventListener('click',async e=>{const t=e.target;
   if(t.id==='addp'){$('pairs').insertAdjacentHTML('beforeend',pairRow({id:newId()}));setupDirty=true}
+  else if(t.matches('[data-add3]')){t.insertAdjacentHTML('afterend',p3Inputs({}));t.remove();setupDirty=true}
   else if(t.matches('[data-rm]')){t.closest('.pair').remove();setupDirty=true}
   else if(t.id==='dall'||t.id==='dnone'){document.querySelectorAll('#dlist .chk:not([hidden]) input').forEach(i=>{i.checked=t.id==='dall';i.checked?drawSel.add(i.dataset.dp):drawSel.delete(i.dataset.dp)});ls.set('gs-draw',[...drawSel]);$('dcount').textContent=drawSel.size}
   else if(t.id==='ddraw'||t.id==='dagain'){if(drawSel.size<2){toast('Tick at least 2 players');return}draft=drawPairs($('dbal').checked);showDraft()}
-  else if(t.id==='duse'){if(!draft)return;$('pairs').innerHTML=draft.pairs.map(([a,b])=>pairRow({id:newId(),p1:a.n,h1:a.h,p2:b.n,h2:b.h})).join('');draft=null;showDraft();setupDirty=true;
+  else if(t.id==='duse'){if(!draft)return;$('pairs').innerHTML=draft.pairs.map(([a,b,c])=>pairRow({id:newId(),p1:a.n,h1:a.h,p2:b.n,h2:b.h,...(c?{p3:c.n,h3:c.h}:{})})).join('');draft=null;showDraft();setupDirty=true;
     if(Object.keys(S).length)toast('Tip: clear old scores below if this is a new round');$('save').click();$('pairs').scrollIntoView({behavior:'smooth',block:'start'})}
   else if(t.id==='addpl'){$('players').insertAdjacentHTML('beforeend',playerRow({}));setupDirty=true}
   else if(t.matches('[data-prm]')){t.closest('.prow').remove();setupDirty=true}
