@@ -366,7 +366,7 @@ function renderScore(){
   const pop=lastPop&&Date.now()-lastPop.t<700&&lastPop.pid===mine?lastPop.key:null;
   el.innerHTML=`<div class="panel">${sel}
     <p class="note">Total <b>${c.tot} pts</b> · ${c.thru===9?'finished 🎉':'thru '+c.thru}. Tap + to start at par. Below 1 = pick-up (0 pts).</p>
-    ${c.on&&c.thru<9?`<button class="btn ghost jump" data-jump="${c.on}">Go to hole ${c.on} ↓</button>`:''}</div>`+
+    ${c.thru<9?`<button class="btn ghost jump" data-jump="${c.on||1}">Go to hole ${c.on||1} ↓</button>`:''}</div>`+
   c.holes.map(h=>(h.h%3===1?`<div class="segh" style="--c:${FMT[h.f].c}">${FMT[h.f].n} · holes ${h.h}–${h.h+2}${h.f===0&&c.three?' · best 2 of 3 count':''}<span>${c.seg[h.f]} pts</span></div>`:'')+
    `<div class="hole" id="hole-${h.h}" style="--c:${FMT[h.f].c}"><div class="hh"><b>Hole ${h.h}</b><span>Par ${h.par} · SI ${esc(h.si)}</span></div>${h.e.map(x=>`
     <div class="ent"><div class="nm">${esc(x.label)}<small>${x.st>0?`${x.st} shot${x.st>1?'s':''} here`:x.st<0?`gives ${-x.st} back`:'no shot'} · plays off ${fmtH(x.ph)}</small></div>
