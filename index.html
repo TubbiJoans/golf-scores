@@ -291,7 +291,8 @@ const ago=t=>{const s=Math.max(0,(Date.now()-t)/1000|0);return s<45?'now':s<3600
 const sig=()=>R.pairs.map(p=>p.id).join(',');
 
 // ---------- live feed (ticker), movement arrows, birdie highlights ----------
-let feed=ls.get('gs-feed-sig','')===sig()?ls.get('gs-feed',[]):[];const hot={},moves={};let lastRanks=null,tickNew=0;
+let feed=[],feedLoaded=false;const hot={},moves={};let lastRanks=null,tickNew=0;
+function loadFeed(){if(feedLoaded||!R.pairs.length)return;feedLoaded=true;feed=ls.get('gs-feed-sig','')===sig()?ls.get('gs-feed',[]):[]}   // only once the round (pairs) is known
 function saveFeed(){ls.set('gs-feed',feed);ls.set('gs-feed-sig',sig())}
 function noteChange(pid,key,g){
   if(ls.get('gs-feed-sig','')!==sig()){feed=[]}
@@ -303,7 +304,7 @@ function noteChange(pid,key,g){
   feed=feed.slice(0,12);saveFeed();tickNew=Date.now();if(b)hot[pid]=Date.now()}
 
 // ---------- rendering ----------
-function render(kind){
+function render(kind){loadFeed();
   $('title').textContent=R.title||'Golf Scores';$('sub').textContent=R.course||'';
   if(view==='board')renderBoard();
   else if(view==='score'){if(document.activeElement&&document.activeElement.id==='pairsel')return;renderScore()}
