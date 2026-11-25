@@ -261,7 +261,8 @@ let leaveArmed=0;function confirmLeave(){if(Date.now()-leaveArmed<3000)return tr
 document.addEventListener('submit',async e=>{if(e.target.id!=='pinf')return;e.preventDefault();const pin=$('pin').value;
   setupDirty=false;
   if(LOCAL){user={demo:1};render();return}
-  try{await au.signInWithEmailAndPassword(auth,EMAIL,pin);toast('Unlocked')}catch{toast('Wrong PIN')}});
+  try{await au.signInWithEmailAndPassword(auth,EMAIL,pin.trim());toast('Unlocked')}catch(err){const c=err&&err.code||'';
+    toast(/invalid-credential|wrong-password|user-not-found|invalid-login/.test(c)?'Wrong PIN ('+c.replace('auth/','')+')':'Sign-in problem: '+(c||err.message))}});
 $('v-score').addEventListener('change',e=>{if(e.target.id==='pairsel'){ls.set('gs-pair',e.target.value);render()}});
 $('v-score').addEventListener('click',e=>{const b=e.target.closest('button[data-k]');if(!b)return;
   const pid=$('pairsel').value,k=b.dataset.k,h=parseInt(k),par=+R.par[h-1]||4,cur=S[pid]?.[k];let v;
