@@ -220,6 +220,10 @@ h2.sec{font:700 22px "Barlow Condensed",system-ui,sans-serif;margin:0 0 8px}
 .hlc b{display:block;font:700 22px/1.1 "Barlow Condensed",system-ui,sans-serif;margin:4px 0 2px}
 .hlc small{font-size:13px;color:var(--mut)}
 .hist{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.hist li{display:flex;gap:8px;align-items:stretch}.hist li>button[data-arch]{flex:1;min-width:0}
+.hist .del{flex:none;width:auto;min-width:56px;padding:0 10px;border:0;border-radius:14px;background:#fde8ea;color:#a01826;font:700 14px Inter,system-ui,sans-serif;cursor:pointer;box-shadow:0 1px 0 var(--line);justify-content:center;text-align:center}
+.hist .del:not(.armed){font-size:20px}
+.hist .del.armed{background:var(--red);color:#fff}
 .hist button{width:100%;text-align:left;border:0;background:var(--card);border-radius:14px;padding:12px 14px;box-shadow:0 1px 0 var(--line);display:flex;justify-content:space-between;gap:10px;align-items:center;cursor:pointer}
 .hist b{display:block}.hist small{color:var(--mut);font-size:13px}
 .hist .w{font:700 22px "Barlow Condensed",system-ui,sans-serif;color:var(--g);white-space:nowrap}
@@ -415,7 +419,7 @@ function holeInOne(who,h,par,alb,gross){
   sparks({x:W*.5,y:H*.4,n:320,cols:rain,pow:22,up:8});boom();
   const iv=setInterval(()=>{if(!d.isConnected||d.classList.contains('out'))return clearInterval(iv);sparks({x:Math.random()*W,y:-20,n:30,cols:rain,pow:3,up:-4})},350);
   const close=()=>{if(d.classList.contains('out'))return;d.classList.add('out');document.body.classList.remove('party','alb');clearInterval(iv);setTimeout(()=>d.remove(),500)};
-  d._close=close;d.addEventListener('click',close);setTimeout(close,9000)}
+  d._close=close;d.addEventListener('click',close);setTimeout(close,9000)}   // no history step: back simply closes it (see popstate)
 
 // ---------- rendering ----------
 function render(kind){loadFeed();
@@ -425,6 +429,7 @@ function render(kind){loadFeed();
   else if(view==='results')renderResults();
   else if(view==='hist')renderHist();
   else if(kind!=='scores'&&!setupDirty)renderSetup();     // scores arriving never wipe the organiser's Setup screen
+  else updArch();                                          // …but the archive lock follows the scores live
 }
 function renderBoard(){
   const el=$('v-board');
@@ -531,11 +536,12 @@ function renderSetup(){
   <button class="btn" id="save" type="button" style="width:100%">Save setup</button>
   <div class="panel" style="margin-top:16px"><h2 class="sec">Finish the round</h2>
     <p class="note" style="margin:0 0 10px">Archive saves the final standings to <b>Past rounds</b> for everyone to see. Then clear the scores for the next round.</p>
-    <div class="row"><button class="btn gold" id="arch" type="button" ${scored?'':'disabled style="opacity:.5"'}>🗂 Archive this round</button>
+    <p class="note" id="archnote" style="margin:0 0 10px;color:#8a5a00" hidden></p>
+    <div class="row"><button class="btn gold" id="arch" type="button">🗂 Archive this round</button>
     <button class="btn warn" id="clear" type="button">Clear all scores</button></div></div>
   <div class="panel"><h2 class="sec">Other</h2><div class="row">
     <button class="btn ghost" id="out" type="button">Lock (sign out)</button></div><p class="note">Signed in as organiser. You can also enter scores.</p></div>`;
-  showDraft();
+  showDraft();updArch();
 }
 const pairRow=p=>`<div class="pair" data-id="${esc(p.id)}">
   <div class="full"><input data-f="name" placeholder="Team name (optional)" value="${esc(p.name||'')}"><button class="x" type="button" data-rm aria-label="Remove pair">×</button></div>
@@ -609,16 +615,28 @@ function renderHist(){
     loadHist().then(h=>{hist=h;if(view==='hist')renderHist()}).catch(e=>{hist=[];el.innerHTML=head+`<div class="empty"><p>Couldn't load past rounds (${esc(e.code||e.message)}).</p></div>`});return}
   if(hist===undefined)return;
   el.innerHTML=head+(hist.length?`<ul class="hist">${hist.map(a=>{const s=summary({R:a,S:a.scores||{}}),w=s.rows[0];
-      return `<li><button data-arch="${esc(a.id)}"><span><b>${esc(new Date(a.at).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}))} · ${esc(a.title||'Round')}</b><small>🏆 ${w?esc(teamName(w.p)):'–'} · ${(a.pairs||[]).length} teams</small></span><span class="w">${w?w.c.tot:''}</span></button></li>`}).join('')}</ul>`
+      return `<li><button data-arch="${esc(a.id)}"><span><b>${esc(new Date(a.at).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}))} · ${esc(a.title||'Round')}</b><small>🏆 ${w?esc(teamName(w.p)):'–'} · ${(a.pairs||[]).length} teams</small></span><span class="w">${w?w.c.tot:''}</span></button>${isAdmin()?(()=>{const armed=Date.now()-(delArm[a.id]||0)<4000;return `<button class="del${armed?' armed':''}" data-del="${esc(a.id)}" type="button" aria-label="Delete the past round from ${esc(new Date(a.at).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}))}">${armed?'Delete?':'🗑'}</button>`})():''}</li>`}).join('')}</ul>${isAdmin()?`<p class="note" style="margin:10px 2px 0">Organiser: tap 🗑 twice to delete a past round for everyone.</p>`:''}`
     :`<div class="empty"><div class="ill">🗂</div><h2>No past rounds yet</h2><p>When a round finishes, the organiser archives it from <b>Setup</b> and it appears here.</p></div>`);
 }
-async function archiveRound(){
+// teams that haven't entered all 9 holes yet (archiving waits for them)
+const unfinished=()=>standings().rows.filter(r=>r.c.thru<9).map(r=>{const miss=r.c.holes.filter(h=>!h.done).map(h=>h.h);
+  return `${teamName(r.p)} (${!r.c.started?'not started':miss.length>3?miss.length+' holes missing':'hole'+(miss.length>1?'s ':' ')+miss.join(', ')+' missing'})`});
+const ARCH_HELP='If a team stopped early, enter P/U for their missing holes in Enter scores. If a team didn’t play, remove it from Pairs and Save setup.';
+function updArch(){const n=$('archnote'),b=$('arch');if(!n||!b)return;const un=R.pairs.length?unfinished():[],ok=R.pairs.length>0&&!un.length;
+  n.hidden=ok;n.style.display=ok?'none':'';n.innerHTML=ok?'':R.pairs.length?`Archive unlocks when every team has a score on all 9 holes (${R.pairs.length-un.length} of ${R.pairs.length} done). ${esc(ARCH_HELP)}`:'No round to archive yet.';
+  b.style.opacity=ok?'':'.5';if(ok)b.removeAttribute('aria-disabled');else b.setAttribute('aria-disabled','true')}
+async function archiveRound(){if(!R.pairs.length||unfinished().length)throw new Error('the round is not finished yet');
   const at=new Date(),id='arch-'+at.toISOString().slice(0,16).replace(/[-:T]/g,'');
   const scores={};R.pairs.forEach(p=>{if(S[p.id])scores[p.id]=S[p.id]});
   const a=JSON.parse(JSON.stringify({kind:'archive',at:at.toISOString(),title:R.title||'',course:R.course||'',par:R.par,si:R.si,pairs:R.pairs,scores}));
   if(LOCAL){const h=ls.get('gs-demo-H',[]).filter(x=>x.id!==id);h.unshift({id,...a});ls.set('gs-demo-H',h)}
   else await fs.setDoc(fs.doc(db,'rounds',id),a);
   hist=null}
+async function deleteArchive(id){
+  if(!/^arch-/.test(id))throw new Error('not a past round');
+  if(LOCAL)ls.set('gs-demo-H',ls.get('gs-demo-H',[]).filter(x=>x.id!==id));
+  else await fs.deleteDoc(fs.doc(db,'rounds',id));
+  if(Array.isArray(hist))hist=hist.filter(x=>x.id!==id);if(view==='hist')renderHist()}
 async function shareImage(src){
   const s=summary(src),RR=src.R;try{await Promise.all([document.fonts.load('700 64px "Barlow Condensed"'),document.fonts.load('600 30px Inter'),document.fonts.load('400 26px Inter')])}catch{}
   const n=Math.min(s.rows.length,10),W=1080,H=Math.max(1350,560+n*104+330),c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
@@ -642,7 +660,7 @@ async function shareImage(src){
   const blob=await new Promise(r=>c.toBlob(r,'image/png'));const file=new File([blob],'golf-results.png',{type:'image/png'});
   const txt=`${s.fin?'Final results':'Results so far'}: ${s.rows.slice(0,3).map(r=>`${r.rank}. ${teamName(r.p)} ${r.c.tot}`).join(', ')}`;
   if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:'Golf results',text:txt});return}catch(e){if(e&&e.name==='AbortError')return}}
-  const url=URL.createObjectURL(blob),m=$('modal');m.innerHTML=`<div class="box"><img src="${url}" alt="Results image"><p class="note" style="margin:0 0 10px">Long-press the image to save or share it, or download it below.</p><div class="row"><a class="btn" href="${url}" download="golf-results.png" style="text-decoration:none;display:flex;align-items:center;justify-content:center">Download</a><button class="btn ghost" data-close>Close</button></div></div>`;m.hidden=false}
+  const url=URL.createObjectURL(blob),m=$('modal');m.innerHTML=`<div class="box"><img src="${url}" alt="Results image"><p class="note" style="margin:0 0 10px">Long-press the image to save or share it, or download it below.</p><div class="row"><a class="btn" href="${url}" download="golf-results.png" style="text-decoration:none;display:flex;align-items:center;justify-content:center">Download</a><button class="btn ghost" data-close>Close</button></div></div>`;if(view!=='results'){URL.revokeObjectURL(url);return}m.dataset.kind='img';m.hidden=false;ovOpen('modal',()=>{m.hidden=true})}
 
 // ---------- data writes ----------
 async function savePlayers(list){
@@ -672,16 +690,25 @@ function applyScores(n){
   render('scores')}
 
 // ---------- events ----------
-function showView(v){if(view==='setup'&&setupDirty&&v!=='setup'&&!confirmLeave())return false;
+function showView(v,fromBack){if(view==='setup'&&setupDirty&&v!=='setup'&&!confirmLeave())return false;
+  if(!fromBack&&v!==view)navTo(v);
   view=v;const tab=v==='results'||v==='hist'?'board':v;document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x.dataset.v===tab));
   for(const s of['board','score','setup','results','hist']){const e=$('v-'+s);e.hidden=s!==view;e.classList.remove('show');if(s===view){void e.offsetWidth;e.classList.add('show')}}
   setupDirty=false;if(v==='hist')hist=null;renderInstall();render();scrollTo(0,0);return true}
 document.querySelector('.tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;buzz();if(b.dataset.v==='board')resSrc=null;showView(b.dataset.v)});
-let leaveArmed=0;function confirmLeave(){if(Date.now()-leaveArmed<3000)return true;leaveArmed=Date.now();toast('Unsaved setup changes — tap again to leave');return false}
+let leaveArmed=0;function confirmLeave(){if(Date.now()-leaveArmed<3000){leaveArmed=0;return true}leaveArmed=Date.now();toast('Unsaved setup changes — tap again to leave');return false}
 document.addEventListener('click',async e=>{const go=e.target.closest('[data-go]');
-  if(go){buzz();resSrc=null;showView(go.dataset.go);return}
-  const ar=e.target.closest('[data-arch]');if(ar){const a=(hist||[]).find(x=>x.id===ar.dataset.arch);if(a){resSrc={R:{...structuredClone(DEF),...a},S:a.scores||{},at:a.at};view='results';showView('results')}return}
-  if(e.target.closest('[data-close]')||e.target.id==='modal'){$('modal').hidden=true;return}
+  if(go){buzz();if(go.classList.contains('back')&&nav.depth>0){history.back();return}resSrc=null;showView(go.dataset.go);return}
+  const del=e.target.closest('[data-del]');if(del){if(!isAdmin())return;
+    const id=del.dataset.del;
+    if(!(Date.now()-(delArm[id]||0)<4000)){const t0=delArm[id]=Date.now();del.classList.add('armed');del.textContent='Delete?';
+      setTimeout(()=>{if(delArm[id]===t0){delete delArm[id];if(view==='hist')renderHist()}},4000);return}
+    delete delArm[id];del.disabled=true;try{await deleteArchive(id);toast('Past round deleted')}
+    catch(err){del.disabled=false;del.classList.remove('armed');del.textContent='🗑';toast('Not deleted: '+(err.code||err.message)+(String(err.code).includes('permission')?' (Firestore rules need updating)':''),5000)}return}
+  const ar=e.target.closest('[data-arch]');if(ar){const a=(hist||[]).find(x=>x.id===ar.dataset.arch);if(a){resSrc={R:{...structuredClone(DEF),...a},S:a.scores||{},at:a.at};if(view!=='results')navTo('results');view='results';showView('results')}return}
+  if(e.target.closest('[data-exit]')){exitChoice();return}
+  if($('modal').dataset.kind==='exit'&&e.target.id==='modal'){exitChoice();return}
+  if(e.target.closest('[data-close]')||e.target.id==='modal'){$('modal').hidden=true;ovDone('modal');return}
   if(e.target.id==='share'){const b=e.target;b.disabled=true;try{await shareImage(resSrc||liveSrc())}catch(err){toast('Could not make the image: '+err.message)}finally{b.disabled=false}}
   const j=e.target.closest('[data-jump]');if(j){$('hole-'+j.dataset.jump)?.scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'})}});
 document.addEventListener('submit',async e=>{const fm=e.target;if(!fm.classList.contains('pinf'))return;e.preventDefault();const pin=fm.querySelector('input').value,admin=fm.dataset.role==='admin';
@@ -729,7 +756,10 @@ $('v-setup').addEventListener('click',async e=>{const t=e.target.closest('button
     try{t.disabled=true;await saveRound({title:$('t-title').value.trim(),course:$('t-course').value.trim(),par,si,pairs});setupDirty=false;toast('Setup saved');
       if(shareNext){shareNext=false;sharedIds=pairs.map(p=>p.id).join();showDraft();const d=$('dres');if(d)d.scrollIntoView({behavior:reduce?'auto':'smooth',block:'center'})}}
     catch(err){shareNext=false;toast('Not saved: '+(err.code||err.message))}finally{t.disabled=false}}
-  else if(t.id==='arch'){if(!t.classList.contains('armed')){t.classList.add('armed');t.textContent='Tap again to archive';setTimeout(()=>{t.classList.remove('armed');t.textContent='🗂 Archive this round'},4000);return}
+  else if(t.id==='arch'){const un=unfinished();
+    if(!R.pairs.length){toast('No round to archive yet');return}
+    if(un.length){toast(`Archive unlocks when every team has a score on all 9 holes. Missing: ${un.slice(0,4).join(', ')}${un.length>4?` and ${un.length-4} more`:''}. ${ARCH_HELP}`,8000);return}
+    if(!t.classList.contains('armed')){t.classList.add('armed');t.textContent='Tap again to archive';setTimeout(()=>{t.classList.remove('armed');t.textContent='🗂 Archive this round'},4000);return}
     t.classList.remove('armed');t.textContent='🗂 Archive this round';
     try{t.disabled=true;await archiveRound();toast('Round archived to Past rounds. Clear the scores when you are ready for the next one.',4000)}catch(err){toast('Not archived: '+(err.code||err.message)+(String(err.code).includes('permission')?' (Firestore rules need updating)':''),5000)}finally{t.disabled=false}}
   else if(t.id==='clear'){if(!t.classList.contains('armed')){t.classList.add('armed');t.textContent='Tap again to clear every score';setTimeout(()=>{t.classList.remove('armed');t.textContent='Clear all scores'},4000);return}
@@ -821,6 +851,43 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-inst
     if(ok)toast('Link copied. Open '+(isIOS?'Safari':'Chrome')+', tap the address bar and paste.',4200);
     else if(!$('inst').querySelector('.lnk')){$('inst').insertAdjacentHTML('beforeend',`<span class="lnk">${esc(appUrl())}</span>`);toast('Press and hold the link to copy it',3500)}}});
 renderInstall();
+
+// ---------- phone back button (Android) ----------
+// History: [root] [Leaderboard step] [other screens…] [share-image pop-up]. Back closes what is in front (the share
+// image or a celebration) first, then steps back through screens. In the installed Android app, back on the
+// Leaderboard asks before leaving. If a step is added with no tap since the page loaded (or since the last back),
+// Chrome lets the back button skip ALL the app's steps and close it, so steps are only added after a tap, and "staying put" steps forward onto the existing
+// step instead of adding a new one.
+const askBeforeExit=()=>isStandalone()&&isAndroid;
+const delArm={};   // past-round id -> time its 🗑 was tapped once (kept across live re-renders)
+const nav={depth:0,skip:0,ov:null,guard:false};
+try{history.scrollRestoration='manual'}catch{}
+function armGuard(){if(nav.guard||!askBeforeExit())return;nav.guard=true;history.pushState({gs:'v',v:'board',n:0},'')}
+function navTo(v){armGuard();if(v==='board'){if(nav.depth>0){nav.skip++;history.go(-nav.depth);nav.depth=0}return}
+  nav.depth++;history.pushState({gs:'v',v,n:nav.depth},'')}
+function ovOpen(name,close){if(nav.ov){if(nav.ov.name===name)nav.ov.close=close;return}armGuard();nav.ov={name,close};history.pushState({gs:'ov',ov:name,n:nav.depth},'')}
+function ovDone(name,fn){if(nav.ov&&nav.ov.name===name&&(!fn||nav.ov.close===fn)){nav.ov=null;nav.skip++;history.back()}}
+{const s0=history.state;                                             // after a reload: go back to the first step we made
+  if(s0&&(s0.gs==='v'||s0.gs==='ov')){const k=(s0.n||0)+(s0.gs==='ov'?1:0)+(s0.gs==='v'&&s0.v==='board'||askBeforeExit()&&(s0.n||0)>0?1:0);if(k>0&&history.length>k){nav.skip++;history.go(-k)}else history.replaceState({gs:'root',n:0},'')}
+  else history.replaceState({gs:'root',n:0},'')}
+addEventListener('pointerup',armGuard,{capture:true,passive:true});   // the first tap adds the "ask before exit" step
+addEventListener('popstate',e=>{
+  if(nav.skip>0){nav.skip--;return}                                   // our own history.back()/go()/forward(), not the user
+  const ace=document.getElementById('ace');                           // a celebration in front: back just closes it
+  if(ace&&!ace.classList.contains('out')){ace._close&&ace._close();nav.skip++;history.forward();return}
+  if(nav.ov){const o=nav.ov;nav.ov=null;o.close();return}             // the share image: back closes it
+  const st=e.state||{};
+  if(st.gs==='root'){const was=nav.depth;nav.depth=0;if(nav.guard&&askBeforeExit())askExit();else if(!showView('board',true)){nav.depth=was;nav.skip++;history.forward()}return}
+  if(st.gs==='v'){const was=nav.depth;nav.depth=st.n||0;if(st.v==='results')resSrc=null;   // back only ever lands on the live Results
+    if(st.v!==view&&!showView(st.v,true)){nav.depth=was;nav.skip++;history.forward()}       // unsaved Setup: stay on it
+    return}
+  if(st.gs==='ov'){nav.skip++;history.back()}                         // a left-over pop-up step: skip it
+});
+function askExit(){const m=$('modal');m.dataset.kind='exit';
+  m.innerHTML=`<div class="box" role="alertdialog" aria-label="Exit Golf Scores?"><h2 class="sec" style="margin:4px 0 6px">Exit Golf Scores?</h2>
+    <p class="note" style="margin:0 0 12px">Press <b>back</b> again to close the app.<br>Scores keep updating when you open it again.</p>
+    <button class="btn" data-exit="stay" type="button" style="width:100%">Stay</button></div>`;m.hidden=false}
+function exitChoice(){const m=$('modal');m.hidden=true;m.dataset.kind='';nav.skip++;history.forward()}   // back onto the Leaderboard step
 if('serviceWorker' in navigator&&location.protocol!=='file:')addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 render();start();
 }
