@@ -152,6 +152,17 @@ input:focus,select:focus,button:focus-visible{outline:3px solid #9ad3b4;outline-
 .btn.warn.armed,.btn.armed{background:var(--red);color:#fff}
 .btn.gold{background:var(--gold);color:var(--g)}
 .btn.wa{background:#25d366;color:#073b2a;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
+fieldset.lk{border:0;margin:0;padding:0;min-width:0}
+#v-setup input:disabled,#v-setup button:disabled,#v-setup select:disabled{opacity:.45;cursor:not-allowed}
+#v-setup input:disabled{background:#e6ebe8;color:#13201a;opacity:.7}
+a.btn.copy{display:flex;align-items:center;justify-content:center;text-decoration:none}
+.slock{border-radius:14px;padding:12px 14px;margin-bottom:12px;font-size:14px;line-height:1.45}
+.slock b{display:block;font-size:15px;margin-bottom:3px}
+.slock.busy{background:#fde8ea;border:1px solid #f3b6bd;color:#7a1220}
+.slock.live{background:#fff4d6;border:1px solid #f0d48a;color:#6b4e00}
+.slock.open{background:#e9f7ef;border:1px solid #b7e2c8;color:#14523d}
+.slock .btn{width:100%;min-height:42px;margin-top:10px}
+.slock.busy .btn:not(.armed){background:#fff;border:1px solid #f3b6bd}
 .shareok{display:block!important;background:#e9f7ef!important;border-color:#b7e2c8!important}
 .shareok p{margin:0 0 8px;font-weight:600}
 .dres .shareok .row{display:flex;background:none;border:0;padding:0;gap:8px;align-items:stretch}
@@ -277,7 +288,7 @@ h2.sec{font:700 22px "Barlow Condensed",system-ui,sans-serif;margin:0 0 8px}
 @keyframes bounce{from{transform:translateY(-26px)}to{transform:translateY(8px) scaleY(.9)}}
 #ace .in{animation:shake .16s linear 9}
 @keyframes shake{0%,100%{transform:translate(0,0)}25%{transform:translate(-4px,2px) rotate(-.6deg)}50%{transform:translate(3px,-3px)}75%{transform:translate(4px,3px) rotate(.6deg)}}
-#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:99px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;z-index:80;text-align:center}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:20px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;width:max-content;max-width:min(90vw,440px);z-index:80;text-align:center}
 #toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
@@ -436,7 +447,7 @@ function render(kind){loadFeed();
   else if(view==='results')renderResults();
   else if(view==='hist')renderHist();
   else if(kind!=='scores'&&!setupDirty){if(document.activeElement&&document.activeElement.matches('#v-setup input'))setupStale=true;else renderSetup()}   // never redraw under the organiser's fingers…
-  else updArch();                                          // …but the archive lock follows the scores live
+  else{updArch();applySetupLock()}                         // …but the archive lock and the round lock follow the scores live
 }
 function renderBoard(){
   const el=$('v-board');
@@ -514,10 +525,11 @@ function renderScore(){
 function renderSetup(){
   const el=$('v-setup');
   if(!isAdmin()){el.innerHTML=pinForm('Setup is for organisers only: pairs, handicaps, players, archiving and clearing scores. The scorer PIN does not open it.','admin');return}
-  setupDirty=false;
+  setupDirty=false;const on=$('orgname'),onV=on&&on.value,onF=!!on&&document.activeElement===on;
   const keys=new Set(P.map(pkey));for(const k of[...drawSel])if(!keys.has(k))drawSel.delete(k);   // drop ticks for players no longer on the list
   const scored=R.pairs.some(p=>Object.values(S[p.id]||{}).some(v=>v!=null));
-  el.innerHTML=`<div class="panel"><h2 class="sec">Round</h2><div class="row">
+  el.innerHTML=`<div id="slock" class="slock" role="status" hidden></div>
+  <fieldset class="lk" id="lk-round"><div class="panel"><h2 class="sec">Round</h2><div class="row">
     <div><label for="t-title">Title</label><input id="t-title" value="${esc(R.title)}"></div>
     <div><label for="t-course">Course</label><input id="t-course" value="${esc(R.course)}"></div></div></div>
   <div class="panel"><h2 class="sec">Random team draw</h2>
@@ -530,25 +542,116 @@ function renderSetup(){
   <div class="panel"><h2 class="sec">Pairs</h2><p class="note" style="margin:0">Tap a player box to pick from the players list, or start typing to narrow it. Their handicap fills in automatically. A guest who isn't on the list: just type their name and handicap. Use normal 18-hole handicaps; the app halves them for 9 holes and applies each format's %. Plus handicaps: type +2 (or −2).</p>
     <div id="pairs">${R.pairs.map(pairRow).join('')}</div>
     <button class="btn ghost" id="addp" type="button" style="width:100%;margin-top:6px">+ Add pair</button>
-    <div class="row" style="margin-top:8px"><a class="btn wa" id="pshare" href="#" target="_blank" rel="noopener">Share teams on WhatsApp</a><button class="btn ghost" id="pcopy" type="button" style="flex:0 0 auto">Copy</button></div></div>
-  <details class="panel"><summary class="sec" style="cursor:pointer">Players &amp; handicaps (${P.length})</summary>
+    <div class="row" style="margin-top:8px"><a class="btn wa" id="pshare" href="#" target="_blank" rel="noopener">Share teams on WhatsApp</a><a class="btn ghost copy" id="pcopy" href="#" role="button" style="flex:0 0 auto">Copy</a></div></div></fieldset>
+  <fieldset class="lk" id="lk-players"><details class="panel"><summary class="sec" style="cursor:pointer">Players &amp; handicaps (${P.length})</summary>
     <p class="note">Update a handicap here once and it fills in automatically from then on. Changes don't alter pairs already saved: re-pick the name to refresh.</p>
     <div id="players">${[...P].sort((a,b)=>a.n.localeCompare(b.n)).map(playerRow).join('')}</div>
-    <div class="row" style="margin-top:8px"><button class="btn ghost" id="addpl" type="button">+ Add player</button><button class="btn" id="savep" type="button">Save players</button></div></details>
-  <div class="panel"><h2 class="sec">Course card</h2><div class="scroll"><table class="course"><tr><th></th>${[...Array(9)].map((_,i)=>`<th>${i+1}</th>`).join('')}</tr>
+    <div class="row" style="margin-top:8px"><button class="btn ghost" id="addpl" type="button">+ Add player</button><button class="btn" id="savep" type="button">Save players</button></div></details></fieldset>
+  <fieldset class="lk" id="lk-course"><div class="panel"><h2 class="sec">Course card</h2><div class="scroll"><table class="course"><tr><th></th>${[...Array(9)].map((_,i)=>`<th>${i+1}</th>`).join('')}</tr>
     <tr><th>Par</th>${R.par.map((v,i)=>`<td><input inputmode="numeric" data-par="${i}" value="${esc(v)}" aria-label="Par hole ${i+1}"></td>`).join('')}</tr>
     <tr><th>SI</th>${R.si.map((v,i)=>`<td><input inputmode="numeric" data-si="${i}" value="${esc(v)}" aria-label="Stroke index hole ${i+1}"></td>`).join('')}</tr></table></div>
     <p class="note">Strokes go to the lowest SI first. Change these if you play the back 9.</p></div>
-  <button class="btn" id="save" type="button" style="width:100%">Save setup</button>
-  <div class="panel" style="margin-top:16px"><h2 class="sec">Finish the round</h2>
+  <button class="btn" id="save" type="button" style="width:100%">Save setup</button></fieldset>
+  <fieldset class="lk" id="lk-finish"><div class="panel" style="margin-top:16px"><h2 class="sec">Finish the round</h2>
     <p class="note" style="margin:0 0 10px">Archive saves the final standings to <b>Past rounds</b> for everyone to see. Then clear the scores for the next round.</p>
     <p class="note" id="archnote" style="margin:0 0 10px;color:#8a5a00" hidden></p>
     <div class="row"><button class="btn gold" id="arch" type="button">🗂 Archive this round</button>
-    <button class="btn warn" id="clear" type="button">Clear all scores</button></div></div>
-  <div class="panel"><h2 class="sec">Other</h2><div class="row">
-    <button class="btn ghost" id="out" type="button">Lock (sign out)</button></div><p class="note">Signed in as organiser. You can also enter scores.</p></div>`;
-  showDraft();updArch();
+    <button class="btn warn" id="clear" type="button">Clear all scores</button></div></div></fieldset>
+  <div class="panel"><h2 class="sec">Other</h2>
+    <label for="orgname">Your name</label><input id="orgname" placeholder="e.g. Bradley" autocomplete="off" autocapitalize="words" value="${esc(orgName())}">
+    <p class="note" style="margin:4px 0 10px">Shown to another organiser who opens Setup while you're in it.</p>
+    <div class="row"><button class="btn ghost" id="out" type="button">Lock (sign out)</button></div><p class="note">Signed in as organiser. You can also enter scores.</p></div>`;
+  if(on){const n=$('orgname');n.value=onV;if(onF)n.focus()}
+  showDraft();updArch();lockChanged();lockTick();
 }
+// ---------- Setup locks ----------
+// 1) One organiser at a time. The phone that opens Setup holds a small lock (Firestore rounds/setup-lock) for as long as it stays in
+//    Setup, refreshed every ~30 s while the app is on screen. Another organiser who opens Setup meanwhile can look but not change anything
+//    (Clear scores and Archive included) until the first one leaves Setup or signs out. A phone that closed the app or left it in the
+//    background stops refreshing, so its lock lapses after 2 minutes; "Take over Setup" is there for a phone left lying on the Setup screen.
+// 2) Once scores are coming in, the round itself (title, draw, pairs, course card, Clear scores) is frozen until every team has
+//    finished, so a stray edit can't upset scores mid-round. The players list stays editable. "Unlock anyway" lifts it until they leave Setup.
+const LOCK_STALE=120000,LOCK_BEAT=25000;
+const DEV=(()=>{const mk=()=>Math.random().toString(36).slice(2,10);try{const st=LOCAL?sessionStorage:localStorage;let v=st.getItem('gs-dev');if(!v){v=mk();st.setItem('gs-dev',v)}return v}catch{return mk()}})();   // demo: each tab is its own "phone"
+// Phones' clocks differ, so a lock's age is never worked out from the time written in it: each phone notes when IT saw the lock change.
+let wasLive=null,lock=null,lockSeen=0,lockOkAt=0,lockWas=null,lockOvr=false,takeArm=0,ovrArm=0,claimP=null,lockOff=false,lockQuiet=false;
+function lockSet(l){l=l&&l.dev?l:null;if(!l||!lock||l.dev!==lock.dev||l.at!==lock.at)lockSeen=Date.now();lock=l;if(l&&l.dev===DEV)lockOkAt=Date.now()}
+lockSet(LOCAL?ls.get('gs-demo-L',null):null);
+const orgName=()=>ls.get('gs-org-name','');
+const lockAge=()=>lock?Date.now()-lockSeen:Infinity;
+const lockOther=()=>lock&&lock.dev!==DEV&&lockAge()<LOCK_STALE?lock:null;
+const lockMine=()=>!!lock&&lock.dev===DEV;
+const lockLost=()=>!LOCAL&&!lockOff&&lockMine()&&Date.now()-lockOkAt>LOCK_STALE;   // ours, but not confirmed for 2 min (no signal): someone may have taken it
+const whoName=l=>l&&String(l.name||'').trim()?String(l.name).trim():'Another organiser';
+const roundLive=()=>R.pairs.length>0&&R.pairs.some(p=>Object.values(S[p.id]||{}).some(v=>v!=null))&&unfinished().length>0;
+async function lockClaim(force){
+  if(!isAdmin()||lockOff)return false;
+  if(claimP){await claimP;if(!force)return lockMine()}                  // one claim at a time; a take-over waits for the one in flight
+  const me={dev:DEV,name:orgName(),at:Date.now()};
+  const held=cur=>!!cur&&!!cur.dev&&cur.dev!==DEV&&!(lock&&cur.dev===lock.dev&&cur.at===lock.at&&lockAge()>=LOCK_STALE);
+  if(LOCAL){const cur=ls.get('gs-demo-L',null);if(force||!held(cur))ls.set('gs-demo-L',me);lockSet(ls.get('gs-demo-L',null));lockChanged();return lockMine()}
+  if(!db)return false;let ok=false;
+  claimP=(async()=>{try{const ref=fs.doc(db,'rounds','setup-lock');
+      // someone else's lock counts as lapsed only after THIS phone has watched it sit unchanged for 2 minutes
+      const got=await fs.runTransaction(db,async tx=>{const d=await tx.get(ref),cur=d.exists()?d.data():null;
+        if(!force&&held(cur))return cur;tx.set(ref,me);return me});
+      lockSet(got);ok=!!got&&got.dev===DEV}
+    catch(err){if(err&&err.code==='permission-denied')lockOff=true;console.warn('Setup lock not taken:',err&&(err.code||err.message))}})();   // offline / no permission: carry on
+  applySetupLock();await claimP;claimP=null;
+  if(ok&&view!=='setup'){lockRelease();return false}                  // they left Setup while it was being taken
+  lockChanged();return ok}
+// let go of exactly the lock we took (a newer claim from this phone, or anyone else's, is left alone)
+function lockRelease(){
+  if(!lockMine())return Promise.resolve();const mine=lock;lockSet(null);
+  if(LOCAL){const cur=ls.get('gs-demo-L',null);if(cur&&cur.dev===DEV&&cur.at===mine.at)try{localStorage.removeItem('gs-demo-L')}catch{}return Promise.resolve()}
+  try{const ref=fs.doc(db,'rounds','setup-lock');
+    return fs.runTransaction(db,async tx=>{const d=await tx.get(ref),cur=d.exists()?d.data():null;if(cur&&cur.dev===DEV&&cur.at===mine.at)tx.delete(ref)}).catch(()=>{})}
+  catch{return Promise.resolve()}}
+// take or refresh the lock while this organiser is looking at Setup; picks it up once another organiser's lock lapses
+function lockTick(){if(view!=='setup'||!isAdmin()||document.hidden||lockOff)return;
+  if(lockOther())return applySetupLock();
+  if(lockMine()&&Date.now()-lockOkAt<LOCK_BEAT)return;
+  lockClaim()}
+setInterval(lockTick,10000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)lockTick()});
+addEventListener('pageshow',()=>lockTick());
+addEventListener('pagehide',()=>{if(view==='setup')lockRelease()});
+// the lock changed (ours, theirs, or theirs lapsed): tell this organiser, then update what they can touch
+function lockChanged(){
+  if(view!=='setup'||!isAdmin()){lockWas=null;return}
+  const o=lockOther(),key=o?o.dev:'',was=lockWas;lockWas=key;
+  if(lockQuiet){applySetupLock();return}
+  if(was===null){if(o)toast(`${whoName(o)} is busy in Setup. You can look, but changes wait until they leave Setup.`,4500)}
+  else if(key!==was){
+    if(o){toTop();if(setupDirty){toast(`${whoName(o)} took over Setup, so your unsaved changes were dropped. Changes are locked until they leave it.`,6000);renderSetup();return}   // never save over their work later
+      toast(`${whoName(o)} is now in Setup. Changes are locked until they leave it.`,4500)}
+    else{toast(roundLive()?'Setup is free now. The round is in progress, so tap Unlock anyway to change more than the players list.':'Setup is free now. You can make changes.',roundLive()?5000:3000);renderSetup();return}}   // a fresh copy of what they saved
+  applySetupLock()}
+const toTop=()=>{if(scrollY>40)scrollTo({top:0,behavior:reduce?'auto':'smooth'})};
+// last check before anything in Setup is written
+function setupWriteOk(){const o=lockOther();
+  if(o){toast(`${whoName(o)} is in Setup, so nothing was changed.`,3500);return false}
+  if(lockLost()){toast('No signal for a while, so another organiser may have taken Setup. Nothing was changed. Try again when the signal is back.',5000);return false}
+  return true}
+function applySetupLock(){
+  const b=$('slock');if(view!=='setup'||!isAdmin()||!b)return;
+  const o=lockOther(),lost=!o&&lockLost(),pend=!o&&!lost&&!!claimP&&!lockMine(),live=!o&&!lost&&roundLive(),now=Date.now();
+  if(lost){b.className='slock busy';b.innerHTML=`<b>📶 Checking you still have Setup</b>No signal for a while, so another organiser may have taken over. Changes are paused until the signal comes back.`}
+  else if(o){const armed=now-takeArm<4000;b.className='slock busy';
+    b.innerHTML=`<b>🔒 ${esc(whoName(o))} is busy in Setup</b>You can look, but changes are locked until they leave Setup, so you don't overwrite each other. If they've left their phone on this screen, you can take over.
+      <button class="btn ${armed?'armed':'warn'}" id="ltake" type="button">${armed?'Tap again to take over':'Take over Setup'}</button>`}
+  else if(live&&!lockOvr){const n=R.pairs.length,d=n-unfinished().length,armed=now-ovrArm<4000;b.className='slock live';
+    b.innerHTML=`<b>⛳ Round in progress</b>Scores are coming in (${d} of ${n} teams finished), so the title, draw, pairs (and their handicaps), course card, Save setup and Clear all scores are locked until every team finishes. The players list can still be updated.
+      <button class="btn ${armed?'armed':'ghost'}" id="lovr" type="button">${armed?'Tap again to unlock':'Unlock anyway'}</button>`}
+  else if(live){b.className='slock open';b.innerHTML=`<b>🔓 Unlocked until you leave Setup</b>Changes now affect the round in progress. Scores already entered stay with their pair.`}
+  b.hidden=!(o||lost||live);
+  if(live&&!lockOvr&&!wasLive&&wasLive!==null&&setupDirty){toTop();toast('Scores have started, so the round is now locked. Tap Unlock anyway at the top to save your changes.',6000)}
+  wasLive=live;
+  const held=!!o||lost||pend,frozen=held||(live&&!lockOvr);
+  for(const id of['lk-round','lk-course']){const f=$(id);if(f)f.disabled=frozen}
+  for(const id of['lk-players','lk-finish']){const f=$(id);if(f)f.disabled=held}
+  const c=$('clear');if(c)c.disabled=!held&&live&&!lockOvr;
+  if(sugFor&&sugFor.closest('fieldset:disabled'))sugClose()}
 const pairRow=p=>`<div class="pair" data-id="${esc(p.id)}">
   <div class="full"><input data-f="name" placeholder="Team name (optional)" value="${esc(p.name||'')}"><button class="x" type="button" data-rm aria-label="Remove pair">×</button></div>
   <input data-f="p1" autocomplete="off" autocapitalize="words" enterkeyhint="next" placeholder="Player 1 (tap to pick)" value="${esc(p.p1||'')}"><input data-f="h1" inputmode="decimal" placeholder="H'cap" value="${esc(fmtH(p.h1))}">
@@ -612,7 +715,7 @@ const waUrl=txt=>'https://wa.me/?text='+encodeURIComponent(txt);
 async function copyTeams(txt){try{await navigator.clipboard.writeText(txt);toast('Teams copied. Paste them into the WhatsApp group.',3500)}catch{toast('Could not copy. Use Share on WhatsApp instead.')}}
 function drawName(x,all){return sugName(x)}
 function showDraft(){const el=$('dres');if(!el)return;
-  if(!draft){el.innerHTML=sharedIds&&sharedIds===pairIds()?`<div class="shareok"><p>✓ Teams saved. Send them to the group:</p><div class="row"><a class="btn wa" id="dshare" href="#" target="_blank" rel="noopener">Share on WhatsApp</a><button class="btn ghost" id="dcopy" type="button">Copy teams</button></div></div>`:'';return}
+  if(!draft){el.innerHTML=sharedIds&&sharedIds===pairIds()?`<div class="shareok"><p>✓ Teams saved. Send them to the group:</p><div class="row"><a class="btn wa" id="dshare" href="#" target="_blank" rel="noopener">Share on WhatsApp</a><a class="btn ghost copy" id="dcopy" href="#" role="button">Copy teams</a></div></div>`:'';return}
   el.innerHTML=draft.pairs.map((pr,i)=>`<div><span><b>${pr.length===3?'Three':'Pair'} ${i+1}</b> &nbsp;${pr.map(x=>esc(x.n)).join(' &amp; ')}</span><span class="note" style="margin:0">${pr.map(x=>esc(fmtH(x.h))).join(' · ')}</span></div>`).join('')+
   (draft.pairs.some(pr=>pr.length===3)?`<p class="note">Odd number, so one team of three. They count the best 2 of 3 scores on holes 1–3, with adjusted Greensomes and Scramble handicaps.</p>`:'')+
   (draft.left?`<p class="note" style="color:#a01826">Odd number: <b>${esc(draft.left.n)}</b> is left over. Tick one more player, or add them to a pair yourself below.</p>`:'')+
@@ -658,7 +761,7 @@ function renderHist(){
 // teams that haven't entered all 9 holes yet (archiving waits for them)
 const unfinished=()=>standings().rows.filter(r=>r.c.thru<9).map(r=>{const miss=r.c.holes.filter(h=>!h.done).map(h=>h.h);
   return `${teamName(r.p)} (${!r.c.started?'not started':miss.length>3?miss.length+' holes missing':'hole'+(miss.length>1?'s ':' ')+miss.join(', ')+' missing'})`});
-const ARCH_HELP='If a team stopped early, enter P/U for their missing holes in Enter scores. If a team didn’t play, remove it from Pairs and Save setup.';
+const ARCH_HELP='If a team stopped early, enter P/U for their missing holes in Enter scores. If a team didn’t play, remove it from Pairs and Save setup (while a round is locked, tap Unlock anyway at the top of Setup first).';
 function updArch(){const n=$('archnote'),b=$('arch');if(!n||!b)return;const un=R.pairs.length?unfinished():[],ok=R.pairs.length>0&&!un.length;
   n.hidden=ok;n.style.display=ok?'none':'';n.innerHTML=ok?'':R.pairs.length?`Archive unlocks when every team has a score on all 9 holes (${R.pairs.length-un.length} of ${R.pairs.length} done). ${esc(ARCH_HELP)}`:'No round to archive yet.';
   b.style.opacity=ok?'':'.5';if(ok)b.removeAttribute('aria-disabled');else b.setAttribute('aria-disabled','true')}
@@ -728,6 +831,7 @@ function applyScores(n){
 
 // ---------- events ----------
 function showView(v,fromBack){sugClose();if(view==='setup'&&setupDirty&&v!=='setup'&&!confirmLeave())return false;
+  if(view==='setup'&&v!=='setup')lockRelease();if(v!==view){lockWas=null;wasLive=null;lockOvr=false;takeArm=ovrArm=0}
   if(!fromBack&&v!==view)navTo(v);
   view=v;const tab=v==='results'||v==='hist'?'board':v;document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x.dataset.v===tab));
   for(const s of['board','score','setup','results','hist']){const e=$('v-'+s);e.hidden=s!==view;e.classList.remove('show');if(s===view){void e.offsetWidth;e.classList.add('show')}}
@@ -748,7 +852,7 @@ document.addEventListener('click',async e=>{const go=e.target.closest('[data-go]
   if(e.target.closest('[data-close]')||e.target.id==='modal'){$('modal').hidden=true;ovDone('modal');return}
   if(e.target.id==='share'&&isAdmin()){const b=e.target;b.disabled=true;try{await shareImage(resSrc||liveSrc())}catch(err){toast('Could not make the image: '+err.message)}finally{b.disabled=false}}
   const j=e.target.closest('[data-jump]');if(j){$('hole-'+j.dataset.jump)?.scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'})}});
-document.addEventListener('submit',async e=>{const fm=e.target;if(!fm.classList.contains('pinf'))return;e.preventDefault();const pin=fm.querySelector('input').value,admin=fm.dataset.role==='admin';
+document.addEventListener('submit',async e=>{const fm=e.target;if(!fm.classList.contains('pinf'))return;e.preventDefault();const pin=fm.querySelector('input').value,admin=fm.dataset.role==='admin';fm.querySelector('input').blur();
   setupDirty=false;
   if(LOCAL){user={demo:1,email:admin?ADMIN:EMAIL};render();return}
   try{await au.signInWithEmailAndPassword(auth,admin?ADMIN:EMAIL,pin.trim());toast(admin?'Organiser unlocked':'Unlocked')}catch(err){const c=err&&err.code||'';
@@ -758,7 +862,7 @@ $('v-score').addEventListener('click',e=>{const b=e.target.closest('button[data-
   const k=b.dataset.k,h=parseInt(k),par=+R.par[h-1]||4,cur=S[pid]?.[k];let v;
   if(+b.dataset.d>0)v=cur==null?par:cur===0?1:Math.min(cur+1,15);else v=cur==null?par-1:cur===0?null:cur===1?0:cur-1;   // empty: − starts at a birdie
   if(v!==(cur??null))setScore(pid,k,v)});
-$('v-setup').addEventListener('input',e=>{const t=e.target;if(t.closest('.pinf'))return;if(sharedIds&&t.closest('.pair')){sharedIds=null;showDraft()}
+$('v-setup').addEventListener('input',e=>{const t=e.target;if(t.closest('.pinf')||t.id==='orgname')return;if(sharedIds&&t.closest('.pair')){sharedIds=null;showDraft()}
   if(t.id==='dsearch'){dq=t.value.trim().toLowerCase();document.querySelectorAll('#dlist .chk').forEach(l=>l.hidden=dq&&!l.dataset.q.includes(dq));return}
   if(t.dataset.dp!==undefined){t.checked?drawSel.add(t.dataset.dp):drawSel.delete(t.dataset.dp);ls.set('gs-draw2',[...drawSel]);$('dcount').textContent=drawSel.size;return}
   if(t.id==='dbal'){dbal=t.checked;return}
@@ -767,18 +871,23 @@ $('v-setup').addEventListener('input',e=>{const t=e.target;if(t.closest('.pinf')
     if(m){if(h){h.value=fmtH(m.h);h.dataset.auto=1;h.classList.add('filled');setTimeout(()=>h.classList.remove('filled'),900)}}
     else if(h&&h.dataset.auto){h.value='';delete h.dataset.auto}}   // was filled from the roster, now a guest: clear it
   if(/^h[123]$/.test(f||''))delete t.dataset.auto});
-$('v-setup').addEventListener('change',e=>{const t=e.target,f=t.dataset.f;if(f==='p1'||f==='p2'||f==='p3'){const m=findP(t.value);if(m)t.value=sugName(m)}});
+$('v-setup').addEventListener('change',e=>{const t=e.target,f=t.dataset.f;if(t.id==='orgname'){ls.set('gs-org-name',t.value.trim().slice(0,30));if(lockMine())lockClaim();return}if(f==='p1'||f==='p2'||f==='p3'){const m=findP(t.value);if(m)t.value=sugName(m)}});
 $('v-setup').addEventListener('click',async e=>{const t=e.target.closest('button')||e.target;
+  if(t.id==='ltake'){if(Date.now()-takeArm>=4000){takeArm=Date.now();applySetupLock();setTimeout(applySetupLock,4100);return}
+    takeArm=0;lockQuiet=true;let ok=false;try{ok=await lockClaim(true)}finally{lockQuiet=false}
+    if(ok){toast('You have Setup now. The other organiser can only look.',3500);renderSetup()}else{toast('Could not take over. Check your signal and try again.',3500);applySetupLock()}return}
+  if(t.id==='lovr'){if(Date.now()-ovrArm>=4000){ovrArm=Date.now();applySetupLock();setTimeout(applySetupLock,4100);return}
+    ovrArm=0;lockOvr=true;applySetupLock();toast('Setup unlocked until you leave it.',3000);return}
   if(['dshare','dcopy','pshare','pcopy'].includes(t.id)){
     if(!savedTeams().length){e.preventDefault();toast('No pairs yet. Draw or add them first.');return}
     if(setupDirty){e.preventDefault();toast('Tap Save setup (below the course card) first, then share.',3500);return}
-    const txt=teamsMsg(savedTeams());if(t.tagName==='A')t.href=waUrl(txt);else copyTeams(txt);return}   // the link opens after this handler, with the new href
+    const txt=teamsMsg(savedTeams());if(t.id==='pshare'||t.id==='dshare')t.href=waUrl(txt);else{e.preventDefault();copyTeams(txt)}return}   // the link opens after this handler, with the new href
   if(t.id==='addp'){$('pairs').insertAdjacentHTML('beforeend',pairRow({id:newId()}));setupDirty=true;if(sharedIds){sharedIds=null;showDraft()}}
   else if(t.matches('[data-add3]')){t.insertAdjacentHTML('afterend',p3Inputs({}));t.remove();setupDirty=true}
   else if(t.matches('[data-rm]')){t.closest('.pair').remove();setupDirty=true;if(sharedIds){sharedIds=null;showDraft()}}
   else if(t.id==='dall'||t.id==='dnone'){document.querySelectorAll('#dlist .chk:not([hidden]) input').forEach(i=>{i.checked=t.id==='dall';i.checked?drawSel.add(i.dataset.dp):drawSel.delete(i.dataset.dp)});ls.set('gs-draw2',[...drawSel]);$('dcount').textContent=drawSel.size}
   else if(t.id==='ddraw'||t.id==='dagain'){if(drawSel.size<2){toast('Tick at least 2 players');return}draft=drawPairs($('dbal').checked);sharedIds=null;shareNext=false;useArmed=0;showDraft()}
-  else if(t.id==='duse'){if(!draft)return;if($('save').disabled){toast('Still saving the last change. Try again in a moment.');return}
+  else if(t.id==='duse'){if(!draft||!setupWriteOk())return;if($('save').disabled){toast('Still saving the last change. Try again in a moment.');return}
     const scored=R.pairs.some(p=>Object.values(S[p.id]||{}).some(v=>v!=null));
     if(scored&&Date.now()-useArmed>5000){useArmed=Date.now();t.classList.add('armed');t.textContent='Scores exist! Tap again';toast('This round already has scores. Archive it first (bottom of Setup), or tap again to replace the pairs. Old scores stop counting.',5000);return}
     const all=draft.pairs.flat();shareNext=true;sharedIds=null;
@@ -786,10 +895,10 @@ $('v-setup').addEventListener('click',async e=>{const t=e.target.closest('button
     $('save').click();if(scored)toast('Pairs replaced. Clear the old scores below when you start the new round.',4500)}
   else if(t.id==='addpl'){$('players').insertAdjacentHTML('beforeend',playerRow({}));setupDirty=true}
   else if(t.matches('[data-prm]')){t.closest('.prow').remove();setupDirty=true}
-  else if(t.id==='savep'){const list=[...document.querySelectorAll('.prow')].map(r=>({n:r.querySelector('[data-pn]').value.trim(),l:r.querySelector('[data-pl]').value.trim(),h:parseH(r.querySelector('[data-ph]').value)})).filter(p=>p.n);
+  else if(t.id==='savep'){if(!setupWriteOk())return;const list=[...document.querySelectorAll('.prow')].map(r=>({n:r.querySelector('[data-pn]').value.trim(),l:r.querySelector('[data-pl]').value.trim(),h:parseH(r.querySelector('[data-ph]').value)})).filter(p=>p.n);
     const seen=new Set(),dup=list.find(p=>{const k=pkey(p).toLowerCase();if(seen.has(k))return true;seen.add(k)});if(dup){toast(`${pkey(dup)} is on the list twice`);return}
     try{t.disabled=true;await savePlayers(list);P=list;setupDirty=false;toast('Players saved')}catch(err){toast('Not saved: '+(err.code||err.message))}finally{t.disabled=false}}
-  else if(t.id==='save'){const pairs=[...document.querySelectorAll('.pair')].map(r=>{const o={id:r.dataset.id};
+  else if(t.id==='save'){if(!setupWriteOk())return;const pairs=[...document.querySelectorAll('.pair')].map(r=>{const o={id:r.dataset.id};
       r.querySelectorAll('[data-f]').forEach(i=>{const f=i.dataset.f,v=i.value.trim();if((f==='p3'||f==='h3')&&!r.querySelector('[data-f=p3]').value.trim())return;o[f]=f[0]==='h'?parseH(v):v});return o});
     const par=[...document.querySelectorAll('[data-par]')].map(i=>Math.min(7,Math.max(3,parseInt(i.value)||4))),si=[...document.querySelectorAll('[data-si]')].map(i=>parseInt(i.value)||0);
     if(new Set(si).size!==9||si.some(v=>v<1||v>18)){shareNext=false;toast('Each hole needs its own SI (1–18). Check the course card.');return}
@@ -800,13 +909,13 @@ $('v-setup').addEventListener('click',async e=>{const t=e.target.closest('button
     if(!R.pairs.length){toast('No round to archive yet');return}
     if(un.length){toast(`Archive unlocks when every team has a score on all 9 holes. Missing: ${un.slice(0,4).join(', ')}${un.length>4?` and ${un.length-4} more`:''}. ${ARCH_HELP}`,8000);return}
     if(!t.classList.contains('armed')){t.classList.add('armed');t.textContent='Tap again to archive';setTimeout(()=>{t.classList.remove('armed');t.textContent='🗂 Archive this round'},4000);return}
-    t.classList.remove('armed');t.textContent='🗂 Archive this round';
+    t.classList.remove('armed');t.textContent='🗂 Archive this round';if(!setupWriteOk())return;
     try{t.disabled=true;await archiveRound();toast('Round archived to Past rounds. Clear the scores when you are ready for the next one.',4000)}catch(err){toast('Not archived: '+(err.code||err.message)+(String(err.code).includes('permission')?' (Firestore rules need updating)':''),5000)}finally{t.disabled=false}}
   else if(t.id==='clear'){if(!t.classList.contains('armed')){t.classList.add('armed');t.textContent='Tap again to clear every score';setTimeout(()=>{t.classList.remove('armed');t.textContent='Clear all scores'},4000);return}
-    t.classList.remove('armed');t.textContent='Clear all scores';
+    t.classList.remove('armed');t.textContent='Clear all scores';if(!setupWriteOk())return;
     if(LOCAL){S={};ls.set('gs-demo-S',S);feed=[];saveFeed();render();toast('Scores cleared');return}
     try{await Promise.all(Object.keys(S).map(id=>fs.deleteDoc(fs.doc(db,'scores',id))));feed=[];saveFeed();toast('Scores cleared')}catch(err){toast('Not cleared: '+(err.code||err.message))}}
-  else if(t.id==='out'){if(LOCAL){user=null;render()}else{await au.signOut(auth)}}});
+  else if(t.id==='out'){await Promise.race([lockRelease(),new Promise(r=>setTimeout(r,1500))]);lockWas=null;setupDirty=false;setupStale=false;if(LOCAL){user=null;render()}else{await au.signOut(auth)}}});
 setInterval(()=>{if(view==='board'&&!document.hidden)renderBoard()},30000);
 
 // ---------- start ----------
@@ -814,7 +923,7 @@ async function start(){
   if(LOCAL){
     $('banner').innerHTML=`<div class="banner"><b>Demo mode.</b> Not connected to Firebase yet. Anything entered stays on this phone only. Any PIN unlocks.</div>`;
     net('demo');R={...structuredClone(DEF),...ls.get('gs-demo-R',{})};S=ls.get('gs-demo-S',{});P=ls.get('gs-demo-P',P);render();ready=true;live=true;
-    addEventListener('storage',e=>{if(e.key==='gs-demo-S')applyScores(ls.get('gs-demo-S',{}));else if(e.key==='gs-demo-R'){R={...structuredClone(DEF),...ls.get('gs-demo-R',{})};render('round')}else if(e.key==='gs-demo-P'){P=ls.get('gs-demo-P',P);render('roster')}});
+    addEventListener('storage',e=>{if(e.key==='gs-demo-S')applyScores(ls.get('gs-demo-S',{}));else if(e.key==='gs-demo-R'){R={...structuredClone(DEF),...ls.get('gs-demo-R',{})};render('round')}else if(e.key==='gs-demo-P'){P=ls.get('gs-demo-P',P);render('roster')}else if(e.key==='gs-demo-L'){lockSet(ls.get('gs-demo-L',null));lockChanged()}});
     return}
   try{
     const [appM,fsM,auM]=await Promise.all([import(SDK+'firebase-app.js'),import(SDK+'firebase-firestore.js'),import(SDK+'firebase-auth.js')]);
@@ -823,6 +932,7 @@ async function start(){
     auth=au.getAuth(app);
     au.onAuthStateChanged(auth,u=>{user=u;render()});
     const slow=setTimeout(()=>net('off'),10000);setTimeout(()=>{ready=true},8000);
+    fs.onSnapshot(fs.doc(db,'rounds','setup-lock'),d=>{lockSet(d.exists()?d.data():null);lockChanged()},()=>{});
     fs.onSnapshot(fs.doc(db,'rounds','roster'),s=>{const d=s.exists()&&s.data().players;if(Array.isArray(d)&&d.length){P=d;render('roster')}},()=>{});
     fs.onSnapshot(fs.doc(db,'rounds','current'),{includeMetadataChanges:true},s=>{
       if(s.exists())R={...structuredClone(DEF),...s.data()};
