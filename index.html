@@ -210,6 +210,18 @@ a.btn.copy{display:flex;align-items:center;justify-content:center;text-decoratio
 .course{border-collapse:collapse;width:100%}
 .dlist{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;max-height:380px;overflow:auto;margin:8px 0;padding:2px}
 .chk{display:flex;gap:8px;align-items:center;min-height:46px;padding:4px 10px;border-radius:10px;background:var(--g3);font-weight:600;cursor:pointer}
+.wl{margin:10px 0 4px;border:1px solid var(--line);border-radius:12px;padding:0 12px;background:#fbfdfc}
+.wl>summary{cursor:pointer;font-weight:700;color:var(--g);padding:12px 0;list-style:none}.wl>summary::-webkit-details-marker{display:none}
+.wl>summary::after{content:" ▸";color:var(--mut)}.wl[open]>summary::after{content:" ▾"}
+.wl textarea{width:100%;box-sizing:border-box;min-height:120px;border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit;font-size:15px;resize:vertical;background:#fff}
+.wl .row{margin:8px 0 12px}
+.wlr{border-radius:10px;padding:10px 12px;margin:0 0 10px;font-size:14px;line-height:1.4}
+.wlr.ok{background:#e9f7ef;color:#14523d}.wlr.chk2{background:#fff4d6;color:#6b4e00}.wlr.need{background:#fde8ea;color:#7a1220}
+.wlr b{display:block;margin-bottom:4px}
+.wlr .opts{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.wlr .opts .btn{min-height:44px;padding:6px 12px;font-size:14px}
+.wl textarea:disabled{background:#e6ebe8;opacity:.7}
+.wlnew{display:grid;grid-template-columns:minmax(0,1fr) 78px auto;gap:6px;margin-top:8px;align-items:center}
+.wlnew input{min-height:44px}.wlnew .btn{min-height:44px;padding:6px 14px}
 .chk small{font-weight:400;color:var(--mut);font-size:12px;display:block}
 .chk input{width:22px;min-height:22px;height:22px;flex:none;accent-color:var(--g);margin:0}
 .dres{margin-top:10px;display:grid;gap:6px}.dres div{display:flex;justify-content:space-between;background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
@@ -429,7 +441,7 @@ function eagle(who,h,word,pt){
 // hole in one and albatross: the whole app goes wild (albatross in ocean blues with a gliding bird)
 function holeInOne(who,h,par,alb,gross){
   const old=document.getElementById('ace');if(old){old._close?.();old.remove()}document.body.classList.remove('party','alb');const d=document.createElement('div');d.id='ace';if(alb)d.className='alb';d.setAttribute('role','alertdialog');d.setAttribute('aria-label',alb?'Albatross':'Hole in one');
-  d.innerHTML=alb?`<div class="in"><span class="ball">🕊️</span><h1>Alba-<br>tross!</h1><p>${esc(who)}<br>Hole ${h} · ${par-gross} under par</p><small>Tap to close</small></div>`
+  d.innerHTML=alb?`<div class="in"><span class="ball">🕊\uFE0F</span><h1>Alba-<br>tross!</h1><p>${esc(who)}<br>Hole ${h} · ${par-gross} under par</p><small>Tap to close</small></div>`
     :`<div class="in"><span class="ball">⛳</span><h1>Hole<br>in one!</h1><p>${esc(who)}<br>Hole ${h} · par ${par}</p><small>Tap to close</small></div>`;document.body.appendChild(d);
   document.body.classList.add('party');if(alb)document.body.classList.add('alb');vib([200,80,200,80,200,80,500,120,500]);
   const W=innerWidth,H=innerHeight,rain=alb?['#0ea5e9','#38bdf8','#22d3ee','#14b8a6','#1e40af','#ffffff','#f4b740']:['#ef4444','#f59e0b','#eab308','#22c55e','#06b6d4','#3b82f6','#a855f7','#ec4899','#fff'];let n=0;
@@ -469,7 +481,7 @@ function renderBoard(){
     const st=c.thru===9?`<b>Finished</b>${c.birdies?`${c.birdies} birdie${c.birdies>1?'s':''}`:''}`:c.started?`<b>On ${c.on}</b>${c.proj!=null?`proj ${c.proj}`:`thru ${c.thru}`}`:`<b>Not started</b>`;
     return `<li data-id="${esc(p.id)}" class="${ht&&now-ht.t<(ht.lv>=3?16000:ht.lv===2?9000:6000)?['','hot','hot2','hot3','hot4'][ht.lv]:''}"><details data-id="${esc(p.id)}" ${open.has(p.id)?'open':''}><summary>
       <span class="pos">${rank}${mv?`<i class="mv ${mv>0?'up':'dn'}">${mv>0?'▲':'▼'}${Math.abs(mv)}</i>`:''}</span>
-      <span class="who"><b>${esc(teamName(p))}</b><small>${hb?`<span class="bb e${hl}">${hl===4?'🕊️ ALBATROSS on':hl===3?'⛳ HOLE IN ONE on':hl===2?'🦅 Eagle on':'🐦 Birdie on'} ${parseInt(hb.key)}!</span>`:`${esc(p.p1||'')} ${esc(fmtH(p.h1))} · ${esc(p.p2||'')} ${esc(fmtH(p.h2))}${c.three?` · ${esc(p.p3)} ${esc(fmtH(p.h3))}`:''}`}</small></span>
+      <span class="who"><b>${esc(teamName(p))}</b><small>${hb?`<span class="bb e${hl}">${hl===4?'🕊\uFE0F ALBATROSS on':hl===3?'⛳ HOLE IN ONE on':hl===2?'🦅 Eagle on':'🐦 Birdie on'} ${parseInt(hb.key)}!</span>`:`${esc(p.p1||'')} ${esc(fmtH(p.h1))} · ${esc(p.p2||'')} ${esc(fmtH(p.h2))}${c.three?` · ${esc(p.p3)} ${esc(fmtH(p.h3))}`:''}`}</small></span>
       <span class="thru">${st}</span>
       <span class="pts">${c.tot}<small>pts</small></span></summary>
       <div class="segs">${FMT.map((f,k)=>`<div class="seg" style="box-shadow:inset 0 3px 0 ${f.c}"><span>${f.n}</span><b>${c.seg[k]}</b><i>${k===0?`gets ${fmtH(c.P.a)} / ${fmtH(c.P.b)}${c.three?' / '+fmtH(c.P.c):''}`:`gets ${fmtH(k===1?c.P.g:c.P.s)}`}</i></div>`).join('')}</div>
@@ -534,8 +546,13 @@ function renderSetup(){
     <div><label for="t-course">Course</label><input id="t-course" value="${esc(R.course)}"></div></div></div>
   <div class="panel"><h2 class="sec">Random team draw</h2>
     <p class="note" style="margin:0">Tick everyone who's playing, then draw. The pairs replace the list below, and scorers then pick their pair in Enter scores.</p>
+    <details class="wl" id="wl"${wl.open?' open':''}><summary>📋 Paste the WhatsApp list</summary>
+      <p class="note" style="margin:0 0 8px">In the group, long-press the “who's playing” message → Copy, then paste it here. The numbered names (1, 2, 3…) get ticked below and everything else in the message is ignored.</p>
+      <textarea id="wltext" placeholder="Friday golf, who's in?&#10;1. Bradley&#10;2. Tim&#10;3. …" autocomplete="off" autocapitalize="words">${esc(wl.text)}</textarea>
+      <div class="row"><button class="btn ghost" id="wlpaste" type="button" style="flex:0 0 auto">Paste</button><button class="btn" id="wlgo" type="button">Tick these players</button></div>
+      <div id="wlres">${wlHtml()}</div></details>
     <div class="row" style="margin-top:8px"><input id="dsearch" placeholder="Search players" autocomplete="off" value="${esc(dq)}" style="flex:2 1 160px"><button class="btn ghost" id="dall" type="button" style="flex:0 0 auto">All</button><button class="btn ghost" id="dnone" type="button" style="flex:0 0 auto">None</button></div>
-    <div class="dlist" id="dlist">${[...P].sort((a,b)=>a.n.localeCompare(b.n)).map(p=>{const k=pkey(p),q=k.toLowerCase();return `<label class="chk" data-q="${esc(q)}" ${dq&&!q.includes(dq)?'hidden':''}><input type="checkbox" data-dp="${esc(k)}" ${drawSel.has(k)?'checked':''}><span>${esc(p.n)}<small>${esc(p.l)} · ${esc(fmtH(p.h))}</small></span></label>`}).join('')}</div>
+    <div class="dlist" id="dlist">${dlistHtml()}</div>
     <label class="chk" style="background:none;padding:0"><input type="checkbox" id="dbal" ${dbal?'checked':''}><span>Balance by handicap<small>Pairs a low handicap with a high one</small></span></label>
     <button class="btn" id="ddraw" type="button" style="width:100%;margin-top:8px">Draw pairs (<span id="dcount">${drawSel.size}</span> playing)</button>
     <div id="dres" class="dres"></div></div>
@@ -681,6 +698,9 @@ function sugClose(){if(sugEl)sugEl.style.display='none';sugFor=null}
 function sugPick(key){const inp=sugFor,p=P.find(x=>pkey(x)===key);if(!inp||!p||!inp.isConnected)return sugClose();
   inp.value=sugName(p);const h=inp.closest('.pair').querySelector(`[data-f=h${inp.dataset.f[1]}]`);if(h){h.value=fmtH(p.h);h.dataset.auto=1;h.classList.add('filled');setTimeout(()=>h.classList.remove('filled'),900)}
   setupDirty=true;if(sharedIds){sharedIds=null;showDraft()}sugClose();inp.blur()}
+document.addEventListener('toggle',e=>{if(e.target.id==='wl')wl.open=e.target.open},true);
+document.addEventListener('paste',e=>{if(e.target.id==='wltext')setTimeout(()=>{wl.text=e.target.value;wlRun()},0)});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.matches&&e.target.matches('[data-wlh]')){e.preventDefault();wlAdd(e.target.dataset.wlh,document.querySelector(`[data-wladd="${e.target.dataset.wlh}"]`))}});
 document.addEventListener('focusin',e=>{const t=e.target;if(t.matches&&t.matches('#pairs [data-f=p1],#pairs [data-f=p2],#pairs [data-f=p3]'))sugOpen(t);else if(!(sugEl&&sugEl.contains(t)))sugClose()});
 // …but catch up with changes from another phone as soon as they leave the box (unless they have unsaved edits of their own)
 let setupStale=false;
@@ -693,6 +713,103 @@ if(window.visualViewport){visualViewport.addEventListener('resize',()=>{if(sugFo
 const findP=v=>{v=String(v||'').trim().toLowerCase().replace(/\s+/g,' ');return v&&(P.find(p=>pkey(p).toLowerCase()===v)||P.find(p=>sugName(p).toLowerCase()===v)||P.find(p=>p.n.toLowerCase()===v))};
 const parseH=v=>{v=String(v??'').trim().replace(/\s/g,'');if(v==='')return 0;const n=parseFloat(v.replace(/^\+/,'-').replace(/^[−–]/,'-').replace(',','.'));return isFinite(n)?n:0};
 const playerRow=p=>`<div class="prow"><input data-pn value="${esc(p.n||'')}" placeholder="First name" aria-label="First name"><input data-pl value="${esc(p.l||'')}" placeholder="Surname" aria-label="Surname"><input data-ph inputmode="decimal" value="${esc(fmtH(p.h))}" placeholder="H'cap" aria-label="Handicap"><button class="x" type="button" data-prm aria-label="Remove player">×</button></div>`;
+const dlistHtml=()=>[...P].sort((a,b)=>a.n.localeCompare(b.n)).map(p=>{const k=pkey(p),q=k.toLowerCase();return `<label class="chk" data-q="${esc(q)}" ${dq&&!q.includes(dq)?'hidden':''}><input type="checkbox" data-dp="${esc(k)}" ${drawSel.has(k)?'checked':''}><span>${esc(p.n)}<small>${esc(p.l)} · ${esc(fmtH(p.h))}</small></span></label>`}).join('');
+// ---------- paste the WhatsApp "who's playing" list ----------
+// The group posts e.g. "Friday golf 7:30 tee\n1. Bradley\n2. Tim F\n3. Sheldon (18)\n4." Only numbered lines count. When the paste holds
+// several numbered runs (a numbered header, or several copied messages) the LAST run is the current list; inside it numbers may skip or repeat.
+// Only sure matches are ticked (full name, first name, first name + surname start). Near misses (spelling, nicknames, surname only) are
+// asked about, never ticked silently, and anyone not on the players list needs a handicap before they can be added.
+let wl={open:false,text:'',res:null};
+const fold=s=>String(s||'').normalize('NFD').replace(/\p{M}/gu,'').toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim();
+function lev(a,b){if(Math.abs(a.length-b.length)>2)return 9;                                   // edits apart (swapped neighbours count as one)
+  const d=[...Array(a.length+1)].map((_,i)=>[i,...Array(b.length).fill(0)]);for(let j=0;j<=b.length;j++)d[0][j]=j;
+  for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++){d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));
+    if(i>1&&j>1&&a[i-1]===b[j-2]&&a[i-2]===b[j-1])d[i][j]=Math.min(d[i][j],d[i-2][j-2]+1)}
+  return d[a.length][b.length]}
+const NICK={steve:'stephen',stevie:'stephen',liz:'elizabeth',lizzie:'elizabeth',beth:'elizabeth',jon:'jonathan',jonny:'johnny',john:'johnny',jw:'jan willen',chris:'chris',freddie:'fred',vanes:'vanessa',nessa:'vanessa'};
+const FILL=/(^|\s)(maybe|possibly|probably|prob|hopefully|tbc|tba|tbd|confirmed|late|yes|yep|pls|please|hcp|h\/c|hc|handicap|in\s*$)(?=\s|$)/gi;
+const GUEST=/^(?:\+\s?\d+(?:\s*guests?)?|plus\s?(?:one|1)|a\s+guest|guests?|friend|\+\s?(?:a\s+)?guests?)$/i;
+function parseWaList(txt){
+  const lines=String(txt||'').replace(/(\d)\uFE0F?\u20E3/g,'$1. ').replace(/🔟/g,'10. ').split(/\r\n|\r|\n|\u2028|\u2029/)
+    .flatMap(l=>l.split(/\s+(?=#?\d{1,2}\s*[.)]\s*\p{L})/u));                                  // "1. Bradley 2. Tim 3. Gerry" on one line
+  const runs=[];let run=null,last=0;
+  for(let line of lines){
+    line=line.replace(/^\s*\[[^\]]{4,40}\]\s*[^:]{1,40}:\s*/,'').replace(/[*_~`]/g,'').replace(/^\s*#/,'').trim();   // "[28/11, 08:01] Tim: "
+    const m=line.match(/^(\d{1,3})(?:\s*([.)\-:–—]+)\s*|\s+)(.*)$/);if(!m)continue;
+    const n=+m[1];
+    if(n===1||!run){run={items:[]};runs.push(run)}else if(n<last)continue;                    // a list starts at 1; a smaller number later isn't part of it
+    last=n;run.items.push({raw:m[3],sep:!!m[2]})}
+  const out=[],seen=new Set(),add=o=>{const k=fold(o.name)+(o.guest?'|g':'');if(!fold(o.name)||seen.has(k))return;seen.add(k);out.push(o)};
+  for(const it of (runs[runs.length-1]||{items:[]}).items){
+    const raw=it.raw.replace(/\s+/g,' ').trim();if(!raw)continue;                               // empty slot "12."
+    const parts=raw.split(/\s*&\s*|\s+and\s+|(?<=\p{L}{2})\s*\/\s*(?=\p{L}{2})|\s+(?=\+\s?(?:\d|guest|a guest))/iu).filter(x=>x&&x.trim());   // "Tim & Emma", "Bradley/Jenna", "Gerry +1"
+    let owner=null;
+    for(let pt of parts){pt=pt.trim();
+      if(GUEST.test(pt)){if(owner)add({name:`${owner}'s guest`,guest:owner,h:null});continue}
+      let h=null;const hm=pt.match(/(?:^|[\s,(\[:\-–])(?:(?:hcp|h\/c|hc|handicap|h)\s*[:.]?\s*)?(\d{1,2}(?:[.,]\d)?)(?:\s*(?:hcp|h\/c|hc|handicap))?\s*[)\]]?\s*$/i);
+      if(hm){h=hm[1].replace(',','.');pt=pt.slice(0,hm.index)}
+      const name=pt.replace(/\(.*?\)|\[.*?\]/g,' ').replace(FILL,' ').replace(FILL,' ').replace(/[^\p{L}\s'’.\-]/gu,' ').replace(/\s+/g,' ').replace(/^[\s.\-'’]+|[\s.\-'’]+$/g,'').trim();
+      if(!name||name.split(' ').length>4)continue;
+      if(!it.sep&&!(matchName(name)||{}).p)continue;                                            // "4 more spots left": no "." or ")" → only a known name counts
+      owner=name.split(' ')[0];add({name,h})}}
+  return out}
+// {p} sure · {maybe:p} ask "is this them?" · {amb:[…]} ask "which?" · null = not on the list
+function matchName(name){
+  const f=fold(name),w=f.split(' ');if(!f)return null;
+  const sure=a=>a.length===1?{p:a[0]}:a.length>1?{amb:a}:null,ask=a=>a.length===1?{maybe:a[0]}:a.length>1?{amb:a}:null;
+  const split=p=>{const pn=fold(p.n),k=pn.split(' ').length;return {pn,pl:fold(p.l),gn:w.slice(0,k).join(' '),gl:w.slice(k).join(' ')}};   // the typed name cut like this player's
+  const lStarts=(pl,gl)=>!!pl&&(pl.startsWith(gl)||pl.split(' ').some(x=>x.startsWith(gl)));
+  let a=P.filter(p=>fold(pkey(p))===f);if(a.length)return sure(a);
+  a=P.filter(p=>fold(sugName(p))===f);if(a.length)return sure(a);
+  a=P.filter(p=>fold(p.n)===f);if(a.length)return sure(a);                                         // "Bradley"
+  a=P.filter(p=>{const x=split(p);return x.gn===x.pn&&x.gl&&lStarts(x.pl,x.gl)});if(a.length)return sure(a);   // "Tim F", "Chris Mac"
+  // not sure from here on: ask
+  const tol=x=>x.length>=7?2:x.length>=4?1:0;
+  a=P.filter(p=>{const x=split(p);return x.gn===x.pn&&x.gl});if(a.length){                          // right first name, other surname: "Ben Smith", "Jenna W"
+    const c=a.filter(p=>{const x=split(p);return lev(x.gl,x.pl)<=tol(x.pl)});return ask(c.length?c:a)}
+  a=P.filter(p=>{const x=split(p),g=NICK[x.gn]||x.gn;
+    const nOK=g===x.pn||(g.length>=4&&g[0]===x.pn[0]&&lev(g,x.pn)<=tol(x.pn))||(w.length===1&&f.length>=3&&x.pn.startsWith(f));   // "Jan-Willem", "Jamie", "Steve", "Jen"
+    return nOK&&(!x.gl||lStarts(x.pl,x.gl)||lev(x.gl,x.pl)<=tol(x.pl))});if(a.length)return ask(a);
+  a=P.filter(p=>{const pl=fold(p.l);return !!pl&&(f===pl||(w.length===2&&w[0].length===1&&w[1]===pl&&fold(p.n)[0]===w[0]))});   // "Kemp", "S Kemp"
+  return ask(a)}
+function wlRun(){const list=parseWaList(wl.text);
+  if(!list.length){wl.res=null;wlDraw();toast('No numbered names found. The list should look like “1. Bradley”, “2. Tim”…',4500);return}
+  const ticked=[],maybe=[],amb=[],unk=[];
+  const newOne=x=>{const ws=x.guest?['']:x.name.split(' ');unk.push({name:x.name,guest:x.guest||null,n:ws[0],l:ws.slice(1).join(' '),h:x.h})};
+  for(const x of list){const m=x.guest?null:matchName(x.name);
+    if(m&&m.p){if(!ticked.includes(pkey(m.p)))ticked.push(pkey(m.p))}
+    else if(m&&m.maybe)maybe.push({name:x.name,key:pkey(m.maybe),h:x.h});
+    else if(m&&m.amb)amb.push({name:x.name,keys:m.amb.map(pkey),h:x.h});
+    else newOne(x)}
+  drawSel=new Set(ticked);ls.set('gs-draw2',[...drawSel]);dq='';const ds=$('dsearch');if(ds)ds.value='';
+  wl.res={total:list.length,ticked,maybe,amb,unk};wlDraw();wlSyncTicks();
+  setTimeout(()=>$('wlres')?.scrollIntoView({block:'nearest',behavior:reduce?'auto':'smooth'}),50);
+  const chk=maybe.length+amb.length,u=unk.length;
+  toast(`Ticked ${ticked.length} player${ticked.length===1?'':'s'}${chk?`, ${chk} to check`:''}${u?`, ${u} ${u===1?'needs':'need'} a handicap`:''}.${chk||u?' See just under the pasted list.':''}`,chk||u?5000:3000)}
+function wlHtml(){const r=wl.res;if(!r)return '';let h='';const left=[r.maybe.length+r.amb.length?(r.maybe.length+r.amb.length)+' to check':'',r.unk.length?r.unk.length+' to add':''].filter(Boolean);
+  h+=`<div class="wlr ok"><b>✓ ${r.ticked.length} ticked</b>${r.total} name${r.total===1?'':'s'} in the list${left.length?': '+left.join(', '):''}. Anyone not on it was unticked.</div>`;
+  r.maybe.forEach((m,i)=>{h+=`<div class="wlr chk2"><b>Is “${esc(m.name)}” ${esc(m.key)}?</b><div class="opts"><button class="btn" type="button" data-wlyes="${i}">Yes, tick</button><button class="btn ghost" type="button" data-wlno="${i}">No, someone new</button></div></div>`});
+  r.amb.forEach((a,i)=>{h+=`<div class="wlr chk2"><b>Which “${esc(a.name)}”?</b><div class="opts">${a.keys.map(k=>`<button class="btn ghost" type="button" data-wlpick="${i}" data-k="${esc(k)}">${esc(k)}</button>`).join('')}<button class="btn ghost" type="button" data-wlnone="${i}">Someone else</button></div></div>`});
+  r.unk.forEach((u,i)=>{const nm=u.typed??(u.n+' '+u.l).trim();
+    h+=`<div class="wlr need"><b>${u.guest?`${esc(u.guest)}’s guest needs a name and a handicap`:`“${esc(u.name)}” isn’t on the players list and needs a handicap`}</b>${u.guest?'Type the guest’s name and handicap, then tap Add.':'If they are on it under another name, type that name. Otherwise add their handicap, then tap Add.'}
+    <div class="wlnew"><input data-wln="${i}" value="${esc(nm)}" placeholder="${u.guest?'Guest’s name':'Name'}" aria-label="Name" autocapitalize="words"><input data-wlh="${i}" inputmode="decimal" placeholder="H'cap" value="${esc(u.h??'')}" aria-label="Handicap"><button class="btn" type="button" data-wladd="${i}">Add</button></div></div>`});
+  return h}
+function wlDraw(){const e=$('wlres');if(e)e.innerHTML=wlHtml()}
+function wlSyncTicks(){const d=$('dlist');if(d)d.innerHTML=dlistHtml();const c=$('dcount');if(c)c.textContent=drawSel.size}
+function wlTick(k){drawSel.add(k);ls.set('gs-draw2',[...drawSel]);if(!wl.res.ticked.includes(k))wl.res.ticked.push(k)}
+async function wlAdd(i,btn){const r=wl.res,u=r&&r.unk[+i];if(!u)return;
+  const ni=document.querySelector(`[data-wln="${i}"]`),hi=document.querySelector(`[data-wlh="${i}"]`),name=(ni?ni.value:u.name).replace(/\s+/g,' ').trim(),hv=(hi?hi.value:'').trim();
+  if(!name||(u.guest&&fold(name)===fold(u.name))){toast(u.guest?'Type the guest’s name first':'Type their name first');ni&&ni.focus();return}
+  const m=matchName(name),have=m&&m.p?m.p:null;                                                   // typed as they are on the players list: just tick them
+  if(!have&&(!hv||!/^[+\-−–]?\d{1,2}([.,]\d)?$/.test(hv))){toast(`${name} needs a handicap before they can be added.`,3500);hi&&hi.focus();return}
+  const ws=name.split(' '),np={n:ws[0],l:ws.slice(1).join(' '),h:parseH(hv)};
+  if(!have){if(!setupWriteOk())return;const list=[...P,np];
+    try{btn&&(btn.disabled=true);await savePlayers(list);P=list}catch(err){btn&&(btn.disabled=false);toast('Not saved: '+(err.code||err.message));return}
+    // also into the Players panel, so a later "Save players" (even with other unsaved edits there) keeps them
+    const pl=$('players');if(pl&&![...pl.querySelectorAll('.prow')].some(x=>fold(x.querySelector('[data-pn]').value+' '+x.querySelector('[data-pl]').value)===fold(pkey(np))))pl.insertAdjacentHTML('beforeend',playerRow(np));
+    const sm=pl&&pl.closest('details')?.querySelector('summary');if(sm)sm.innerHTML=`Players &amp; handicaps (${P.length})`}
+  const k=pkey(have||np);wlTick(k);r.unk.splice(+i,1);
+  wlDraw();wlSyncTicks();toast(have?`${k} is on the players list, now ticked.`:`${k} added to the players list (${fmtH(np.h)}) and ticked.`,3500)}
 function rnd(n){const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]%n}
 function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
 function drawPairs(bal){let pl=shuffle(P.filter(p=>drawSel.has(pkey(p))));let left=null;
@@ -862,7 +979,9 @@ $('v-score').addEventListener('click',e=>{const b=e.target.closest('button[data-
   const k=b.dataset.k,h=parseInt(k),par=+R.par[h-1]||4,cur=S[pid]?.[k];let v;
   if(+b.dataset.d>0)v=cur==null?par:cur===0?1:Math.min(cur+1,15);else v=cur==null?par-1:cur===0?null:cur===1?0:cur-1;   // empty: − starts at a birdie
   if(v!==(cur??null))setScore(pid,k,v)});
-$('v-setup').addEventListener('input',e=>{const t=e.target;if(t.closest('.pinf')||t.id==='orgname')return;if(sharedIds&&t.closest('.pair')){sharedIds=null;showDraft()}
+$('v-setup').addEventListener('input',e=>{const t=e.target;if(t.closest('.pinf')||t.id==='orgname')return;
+  if(t.closest('#wl')){if(t.id==='wltext')wl.text=t.value;const u=wl.res&&wl.res.unk[+(t.dataset.wln??t.dataset.wlh)];if(u){if(t.dataset.wln!=null)u.typed=t.value;else u.h=t.value}return}   /* the pasted list is a helper, not an unsaved Setup change */
+ if(sharedIds&&t.closest('.pair')){sharedIds=null;showDraft()}
   if(t.id==='dsearch'){dq=t.value.trim().toLowerCase();document.querySelectorAll('#dlist .chk').forEach(l=>l.hidden=dq&&!l.dataset.q.includes(dq));return}
   if(t.dataset.dp!==undefined){t.checked?drawSel.add(t.dataset.dp):drawSel.delete(t.dataset.dp);ls.set('gs-draw2',[...drawSel]);$('dcount').textContent=drawSel.size;return}
   if(t.id==='dbal'){dbal=t.checked;return}
@@ -882,6 +1001,14 @@ $('v-setup').addEventListener('click',async e=>{const t=e.target.closest('button
     if(!savedTeams().length){e.preventDefault();toast('No pairs yet. Draw or add them first.');return}
     if(setupDirty){e.preventDefault();toast('Tap Save setup (below the course card) first, then share.',3500);return}
     const txt=teamsMsg(savedTeams());if(t.id==='pshare'||t.id==='dshare')t.href=waUrl(txt);else{e.preventDefault();copyTeams(txt)}return}   // the link opens after this handler, with the new href
+  if(t.id==='wlgo'){const ta=$('wltext');wl.text=ta?ta.value:wl.text;wlRun();return}
+  if(t.id==='wlpaste'){try{const v=await navigator.clipboard.readText();if(!v||!v.trim())throw 0;const ta=$('wltext');ta.value=wl.text=v;wlRun()}
+    catch{toast('Long-press the box and tap Paste.',3000);$('wltext')?.focus()}return}
+  if(t.matches('[data-wlpick]')){const r=wl.res,a=r&&r.amb[+t.dataset.wlpick];if(!a)return;wlTick(t.dataset.k);r.amb.splice(+t.dataset.wlpick,1);wlDraw();wlSyncTicks();toast(`${t.dataset.k} ticked`);return}
+  if(t.matches('[data-wlyes]')){const r=wl.res,m=r&&r.maybe[+t.dataset.wlyes];if(!m)return;wlTick(m.key);r.maybe.splice(+t.dataset.wlyes,1);wlDraw();wlSyncTicks();toast(`${m.key} ticked`);return}
+  if(t.matches('[data-wlno],[data-wlnone]')){const r=wl.res,no=t.matches('[data-wlno]'),arr=no?r.maybe:r.amb,ix=+(no?t.dataset.wlno:t.dataset.wlnone),m=arr&&arr[ix];if(!m)return;
+    arr.splice(ix,1);const ws=m.name.split(' ');r.unk.push({name:m.name,n:ws[0],l:ws.slice(1).join(' '),h:m.h});wlDraw();toast(`${m.name} isn’t on the players list, so add their handicap.`,3500);return}
+  if(t.matches('[data-wladd]')){await wlAdd(t.dataset.wladd,t);return}
   if(t.id==='addp'){$('pairs').insertAdjacentHTML('beforeend',pairRow({id:newId()}));setupDirty=true;if(sharedIds){sharedIds=null;showDraft()}}
   else if(t.matches('[data-add3]')){t.insertAdjacentHTML('afterend',p3Inputs({}));t.remove();setupDirty=true}
   else if(t.matches('[data-rm]')){t.closest('.pair').remove();setupDirty=true;if(sharedIds){sharedIds=null;showDraft()}}
