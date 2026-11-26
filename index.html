@@ -137,6 +137,12 @@ table.sc{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 12px}
 .dot0{box-shadow:inset 0 -3px 0 var(--f0)}.dot1{box-shadow:inset 0 -3px 0 var(--f1)}.dot2{box-shadow:inset 0 -3px 0 var(--f2)}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--mut);margin:12px 2px 0}
 .legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px;background:var(--c)}
+.marks{display:flex;gap:8px 16px;flex-wrap:wrap;font-size:12px;color:var(--mut);margin:10px 2px 0}
+.marks span{display:inline-flex;align-items:center;gap:7px}
+.marks i{display:inline-block;width:14px;height:14px;box-sizing:border-box;border-radius:50%;border:2px solid var(--red)}
+.marks i.eg{border-color:var(--gold);box-shadow:0 0 0 1.5px #fff,0 0 0 3px var(--gold)}
+.marks i.alb{border:0;background:linear-gradient(135deg,#22d3ee,#0ea5e9 50%,#1e40af);box-shadow:0 0 0 1.5px #fff,0 0 0 3px #0ea5e9}
+.marks i.ace{border:0;background:linear-gradient(135deg,#f4b740,#ef4444 50%,#a855f7);box-shadow:0 0 0 1.5px #fff,0 0 0 3px #a855f7}
 .more{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
 /* scoring */
 .panel{background:var(--card);border-radius:14px;padding:14px;box-shadow:0 1px 0 var(--line);margin-bottom:12px}
@@ -163,6 +169,7 @@ a.btn.copy{display:flex;align-items:center;justify-content:center;text-decoratio
 .slock.open{background:#e9f7ef;border:1px solid #b7e2c8;color:#14523d}
 .slock .btn{width:100%;min-height:44px;margin-top:10px}
 .slock small{display:block;margin-top:6px}
+
 .slock label{display:block;margin-top:12px}
 .treq{position:fixed;left:12px;right:12px;top:calc(12px + env(safe-area-inset-top));z-index:70;max-width:460px;margin:0 auto;background:#fff;border:2px solid var(--red);border-radius:16px;padding:14px 16px;box-shadow:0 10px 30px rgba(0,0,0,.25);font-size:14px;line-height:1.45}
 .treq b{display:block;font-size:16px;margin-bottom:4px}
@@ -176,6 +183,8 @@ a.btn.copy{display:flex;align-items:center;justify-content:center;text-decoratio
 .btn.wa{text-align:center}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:end}
 .row>*{flex:1 1 140px}
+.row>.ttime{flex:0 1 190px;min-width:170px}
+.ttime .tt{display:flex;gap:6px}.ttime .tt input{flex:1;min-width:0}.ttime .tt .btn{flex:0 0 auto;padding:0 12px}
 .hole{background:var(--card);border-radius:14px;margin-bottom:10px;box-shadow:0 1px 0 var(--line);border-left:6px solid var(--c);overflow:hidden;scroll-margin-top:70px}
 .hh{display:flex;justify-content:space-between;align-items:baseline;padding:10px 14px 4px}
 .hh b{font:700 24px "Barlow Condensed",system-ui,sans-serif}
@@ -511,7 +520,8 @@ function renderBoard(){
       <tr><td>Par</td>${c.holes.map(h=>`<td>${h.par}</td>`).join('')}<td>${c.holes.reduce((a,h)=>a+h.par,0)}</td></tr>
       <tr><td>Points</td>${c.holes.map(h=>`<td class="${h.lv===4?'bd alb':h.lv===3?'bd ace':h.lv===2?'bd eg':h.birdie?'bd':''}"><span>${h.hp??'–'}</span></td>`).join('')}<td class="tot">${c.tot}</td></tr></table></div>
     </details></li>`}).join('')}</ol>
-    <div class="legend">${FMT.map((f,k)=>`<span style="--c:${f.c}">Holes ${k*3+1}–${k*3+3} ${f.n}</span>`).join('')}<span style="--c:var(--red)">Circled = birdie or better · double ring = eagle</span></div>${moreBtns()}`;
+    <div class="legend">${FMT.map((f,k)=>`<span style="--c:${f.c}">Holes ${k*3+1}–${k*3+3} ${f.n}</span>`).join('')}</div>
+    <div class="marks" aria-label="Scorecard marks"><span><i></i>Birdie</span><span><i class="eg"></i>Eagle</span><span><i class="alb"></i>Albatross</span><span><i class="ace"></i>Hole in one</span></div>${moreBtns()}`;
   if(!reduce)el.querySelectorAll('.lb li').forEach(li=>{const b=before[li.dataset.id];if(b==null)return;const d=b-li.getBoundingClientRect().top;
     if(Math.abs(d)>2)li.animate([{transform:`translateY(${d}px)`},{transform:'none'}],{duration:650,easing:'cubic-bezier(.2,.8,.2,1)'})});
   if(fin)celebrate(rows);
@@ -624,7 +634,9 @@ function renderSetup(){
   el.innerHTML=`<div id="slock" class="slock" role="status" hidden></div>
   <fieldset class="lk" id="lk-round"><div class="panel"><h2 class="sec">Round</h2><div class="row">
     <div><label for="t-title">Title</label><input id="t-title" value="${esc(R.title)}"></div>
-    <div><label for="t-course">Course</label><input id="t-course" value="${esc(R.course)}"></div></div></div>
+    <div><label for="t-course">Course</label><input id="t-course" value="${esc(R.course)}"></div>
+    <div class="ttime"><label for="t-time">Tee-off time</label><div class="tt"><input id="t-time" type="time" value="${esc(R.time||'')}"><button class="btn ghost" id="t-time-x" type="button" aria-label="Clear the tee-off time">Clear</button></div></div></div>
+    <p class="note" style="margin:6px 0 0">The tee-off time goes in the WhatsApp teams message (Clear it to leave it out). It stays from week to week, so check it before you share the teams.</p></div>
   <div class="panel"><h2 class="sec">Random team draw</h2>
     <p class="note" style="margin:0">Tick everyone who's playing, then draw. The pairs replace the list below, and scorers then pick their pair in Enter scores.</p>
     <details class="wl" id="wl"${wl.open?' open':''}><summary>📋 Paste the WhatsApp list</summary>
@@ -956,10 +968,11 @@ function assignTees(pairs){const list=pairs.filter(x=>x.p1||x.p2),have=list.filt
   if(!have.length){teeGroups(list,is3,()=>null).forEach(g=>g.xs.forEach(x=>x.tg=g.i));return pairs}
   const next=Math.max(...have.map(x=>x.tg))+1;teeGroups(fresh,is3,()=>null).forEach(g=>g.xs.forEach(x=>x.tg=next+g.i));return pairs}
 const teeOf=p=>{const g=teeGroups(R.pairs.filter(x=>x.p1||x.p2),is3).find(x=>x.xs.includes(p));return g?g.hole:1};   // saved hole, or worked out for an older round
+const fmtTime=t=>{const m=/^(\d{1,2}):(\d{2})/.exec(t||'');if(!m)return '';const h=+m[1];return `${h%12||12}:${m[2]} ${h<12?'am':'pm'}`};
 function teamsMsg(teams){
   const who=t=>{const x=t.ps.map(p=>p.n+(p.h!==''&&p.h!=null?` (${fmtH(p.h)})`:''));return x.length>2?x.slice(0,-1).join(', ')+' & '+x[x.length-1]:x.join(' & ')};
   const nm=t=>t.name.replace(/[*_~`]/g,'').trim();
-  return `⛳ ${R.title||'Golf'}${R.course?' · '+R.course:''}\nTeams and starting holes:\n\n`+
+  return `⛳ ${R.title||'Golf'}${R.course?' · '+R.course:''}\n${fmtTime(R.time)?`🕖 Tee-off: *${fmtTime(R.time)}*\n`:''}Teams and starting holes:\n\n`+
     teeGroups(teams,t=>t.ps.length>2).map(g=>`*Hole ${g.hole}*${g.second?' (2nd group)':''}\n`+g.xs.map(t=>`${t.num}. ${nm(t)?`*${nm(t)}*: `:''}${who(t)}`).join('\n')).join('\n\n')+
     `\n\nLive scores: ${appUrl()}`}
 const savedTeams=()=>R.pairs.filter(p=>p.p1||p.p2).map((p,i)=>({num:i+1,tg:p.tg,name:p.name||'',ps:[{n:p.p1||'Player 1',h:p.h1},{n:p.p2||'Player 2',h:p.h2},...(p.p3?[{n:p.p3,h:p.h3}]:[])]}));
@@ -1186,6 +1199,7 @@ $('v-setup').addEventListener('click',async e=>{const t=e.target.closest('button
     const all=draft.pairs.flat();shareNext=true;sharedIds=null;
     $('pairs').innerHTML=draft.pairs.map(([a,b,c])=>pairRow({id:newId(),p1:drawName(a,all),h1:a.h,p2:drawName(b,all),h2:b.h,...(c?{p3:drawName(c,all),h3:c.h}:{})})).join('');draft=null;useArmed=0;showDraft();setupDirty=true;
     $('save').click();if(scored)toast('Pairs replaced. Clear the old scores below when you start the new round.',4500)}
+  else if(t.id==='t-time-x'){const i=$('t-time');if(i.value){i.value='';setupDirty=true}}
   else if(t.id==='addpl'){$('players').insertAdjacentHTML('beforeend',playerRow({}));setupDirty=true}
   else if(t.matches('[data-prm]')){t.closest('.prow').remove();setupDirty=true}
   else if(t.matches('[data-akarm]')){const box=t.closest('.aka'),a=JSON.parse(box.dataset.pa||'[]').filter(x=>x!==t.dataset.akarm);box.outerHTML=akaHtml(a)||'<div class="aka" data-pa="[]" hidden></div>';setupDirty=true;toast('Tap Save players to forget that name.',3000)}
@@ -1196,7 +1210,7 @@ $('v-setup').addEventListener('click',async e=>{const t=e.target.closest('button
       r.querySelectorAll('[data-f]').forEach(i=>{const f=i.dataset.f,v=i.value.trim();if((f==='p3'||f==='h3')&&!r.querySelector('[data-f=p3]').value.trim())return;o[f]=f[0]==='h'?parseH(v):v});return o});
     const par=[...document.querySelectorAll('[data-par]')].map(i=>Math.min(7,Math.max(3,parseInt(i.value)||4))),si=[...document.querySelectorAll('[data-si]')].map(i=>parseInt(i.value)||0);
     if(new Set(si).size!==9||si.some(v=>v<1||v>18)){shareNext=false;toast('Each hole needs its own SI (1–18). Check the course card.');return}
-    try{t.disabled=true;await saveRound({title:$('t-title').value.trim(),course:$('t-course').value.trim(),par,si,pairs:assignTees(pairs)});setupDirty=false;toast('Setup saved');
+    try{t.disabled=true;await saveRound({title:$('t-title').value.trim(),course:$('t-course').value.trim(),time:$('t-time').value||'',par,si,pairs:assignTees(pairs)});setupDirty=false;toast('Setup saved');
       if(shareNext){shareNext=false;sharedIds=pairs.map(p=>p.id).join();showDraft();const d=$('dres');if(d)d.scrollIntoView({behavior:reduce?'auto':'smooth',block:'center'})}}
     catch(err){shareNext=false;toast('Not saved: '+(err.code||err.message))}finally{t.disabled=false}}
   else if(t.id==='arch'){const un=unfinished();
