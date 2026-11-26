@@ -232,6 +232,14 @@ a.btn.copy{display:flex;align-items:center;justify-content:center;text-decoratio
 .chk small{font-weight:400;color:var(--mut);font-size:12px;display:block}
 .chk input{width:22px;min-height:22px;height:22px;flex:none;accent-color:var(--g);margin:0}
 .dres{margin-top:10px;display:grid;gap:6px}.dres div{display:flex;justify-content:space-between;background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.dres .dpair{display:block}.dres .dpair .hd{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.dres .dpair div{border:0;padding:0;background:none;border-radius:0}
+.dres .chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-start}
+.dres .dchip{min-height:44px;border:1px solid var(--line);background:var(--g3);color:var(--g);border-radius:10px;padding:6px 12px;font:600 15px Inter,system-ui,sans-serif;cursor:pointer}
+.dres .dchip small{font-weight:400;color:var(--mut);margin-left:6px}
+.dres .dchip.on{background:var(--g);color:#fff;border-color:var(--g);box-shadow:0 0 0 3px #9ad3b4}.dres .dchip.on small{color:#d6efe2}
+.dres .dchip.sw{animation:pop .32s ease-out}
+.dres label.chk{display:flex;background:var(--g3);border:0;margin:2px 0 0}
 .dres b{font-family:"Barlow Condensed",system-ui,sans-serif;font-size:20px}
 .prow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) 72px 46px;gap:6px;padding:5px 0}
 details.panel>summary{list-style:none}details.panel>summary::before{content:"▸ ";color:var(--g)}details[open].panel>summary::before{content:"▾ "}
@@ -359,7 +367,7 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ls={get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
 const pkey=p=>(p.n+' '+(p.l||'')).trim();                       // unique player key (first + surname)
-let drawSel=new Set(ls.get('gs-draw2',[])),draft=null,shareNext=false,sharedIds=null,dq='',dbal=false,useArmed=0;
+let dEdit=false,dPick=null,drawSel=new Set(ls.get('gs-draw2',[])),draft=null,shareNext=false,sharedIds=null,dq='',dbal=false,useArmed=0;
 let P=ROSTER.map(([n,l,h])=>({n,l,h})),R=structuredClone(DEF),S={},user=null,view='board',fs=null,au=null,db=null,auth=null,setupDirty=false;
 let ready=false,live=false,resSrc=null,hist=null,lastPop=null;
 const LOCAL=!firebaseConfig;
@@ -387,7 +395,7 @@ const teamName=p=>p.name||[p.p1||'Player 1',p.p2||'Player 2',...(is3(p)?[p.p3]:[
 // 1 birdie, 2 eagle, 3 hole in one, 4 albatross (a hole in one on a par 4 counts as the hole in one)
 const lvOf=(g,par)=>g===null||g===undefined||g<=0?0:g===1?3:g<=par-3?4:g===par-2?2:g===par-1?1:0;
 function card(p,RR=R,SS=S){
-  const P=phs(p),rk=ranks(RR.si||DEF.si),sc=(SS&&SS[p.id])||{},three=is3(p);let tot=0,thru=0,done6=0,last=0;const seg=[0,0,0],holes=[];
+  const P=phs(p),rk=ranks(RR.si||DEF.si),sc=(SS&&SS[p.id])||{},three=is3(p);let tot=0,thru=0,last=0;const seg=[0,0,0],holes=[],fp=[0,0,0],fn=[0,0,0];
   for(let h=1;h<=9;h++){const i=h-1,par=+(RR.par||DEF.par)[i]||4,f=fmtOf(h);
     const rows=f===0?[['a',pn(p,'a'),P.a],['b',pn(p,'b'),P.b],...(three?[['c',pn(p,'c'),P.c]]:[])]:[['',f===1?'Greensomes ball':'Scramble ball',f===1?P.g:P.s]];
     const e=rows.map(([k,l,ph])=>{const key=h+k,g=sc[key],gross=(g===undefined||g===null||g==='')?null:+g,st=strokes(ph,rk[i]);
@@ -396,9 +404,9 @@ function card(p,RR=R,SS=S){
     let counted=got;
     if(f===0&&three&&got.length===3){const low=[...got].sort((x,y)=>x.pt-y.pt||(y.gross||99)-(x.gross||99))[0];low.drop=true;counted=got.filter(x=>x!==low)}
     const hp=counted.reduce((a,x)=>a+x.pt,0);tot+=hp;seg[f]+=hp;if(got.length)last=h;
-    if(done){thru++;done6+=hp}holes.push({h,par,si:(RR.si||DEF.si)[i],f,e,done,hp:got.length?hp:null,birdie:counted.some(x=>x.bird),lv:Math.max(0,...counted.map(x=>x.lv))})}
+    if(done){thru++;fp[f]+=hp;fn[f]++}holes.push({h,par,si:(RR.si||DEF.si)[i],f,e,done,hp:got.length?hp:null,birdie:counted.some(x=>x.bird),lv:Math.max(0,...counted.map(x=>x.lv))})}
   let on=null;if(last){on=holes[last-1].done?null:last;if(!on){for(let k=0;k<9;k++){const hh=holes[(last+k)%9];if(!hh.done){on=hh.h;break}}}}
-  const proj=thru>=3&&thru<9?Math.round(done6/thru*9):null;     // too jumpy before 3 holes
+  const proj=thru>=3&&thru<9?Math.round(holes.reduce((a,h)=>a+(h.done?h.hp:fn[h.f]?fp[h.f]/fn[h.f]:h.f===0?4:2),0)):null;     // too jumpy before 3 holes; fair whichever hole a team started on
   return{P,tot,seg,thru,holes,three,on,proj,started:!!last,birdies:holes.reduce((a,h)=>a+h.e.filter(x=>x.bird&&!x.drop).length,0)}}
 function standings(RR=R,SS=S){
   const rows=(RR.pairs||[]).map(p=>({p,c:card(p,RR,SS)}));
@@ -534,7 +542,7 @@ function renderScore(){
   const pop=lastPop&&Date.now()-lastPop.t<700&&lastPop.pid===mine?lastPop.key:null;
   el.innerHTML=`<div class="panel">${sel}
     <p class="note">Total <b>${c.tot} pts</b> · ${c.thru===9?'finished 🎉':'thru '+c.thru}. Tap + to start at par, or − to start at a birdie. Below 1 = pick-up (0 pts).</p>
-    ${c.thru<9?`<button class="btn ghost jump" data-jump="${c.on||1}">Go to hole ${c.on||1} ↓</button>`:''}</div>`+
+    ${c.thru<9?(()=>{const h=c.on||teeOf(p);return `<button class="btn ghost jump" data-jump="${h}">Go to hole ${h} ↓</button>`})():''}</div>`+
   c.holes.map(h=>(h.h%3===1?`<div class="segh" style="--c:${FMT[h.f].c}">${FMT[h.f].n} · holes ${h.h}–${h.h+2}${h.f===0&&c.three?' · best 2 of 3 count':''}<span>${c.seg[h.f]} pts</span></div>`:'')+
    `<div class="hole" id="hole-${h.h}" style="--c:${FMT[h.f].c}"><div class="hh"><b>Hole ${h.h}</b><span>Par ${h.par} · SI ${esc(h.si)}</span></div>${h.e.map(x=>`
     <div class="ent"><div class="nm">${esc(x.label)}<small>${x.st>0?`${x.st} shot${x.st>1?'s':''} here`:x.st<0?`gives ${-x.st} back`:'no shot'} · plays off ${fmtH(x.ph)}</small></div>
@@ -560,7 +568,7 @@ function renderSetup(){
       <div id="wlres">${wlHtml()}</div></details>
     <div class="row" style="margin-top:8px"><input id="dsearch" placeholder="Search players" autocomplete="off" value="${esc(dq)}" style="flex:2 1 160px"><button class="btn ghost" id="dall" type="button" style="flex:0 0 auto">All</button><button class="btn ghost" id="dnone" type="button" style="flex:0 0 auto">None</button></div>
     <div class="dlist" id="dlist">${dlistHtml()}</div>
-    <label class="chk" style="background:none;padding:0"><input type="checkbox" id="dbal" ${dbal?'checked':''}><span>Balance by handicap<small>Pairs a low handicap with a high one</small></span></label>
+    <label class="chk" style="background:none;padding:0"><input type="checkbox" id="dbal" ${dbal?'checked':''}><span>Balance by handicap<small>Each pair gets a lower and a higher handicap, with the pair totals kept even</small></span></label>
     <button class="btn" id="ddraw" type="button" style="width:100%;margin-top:8px">Draw pairs (<span id="dcount">${drawSel.size}</span> playing)</button>
     <div id="dres" class="dres"></div></div>
   <div class="panel"><h2 class="sec">Pairs</h2><p class="note" style="margin:0">Tap a player box to pick from the players list, or start typing to narrow it. Their handicap fills in automatically. A guest who isn't on the list: just type their name and handicap. Use normal 18-hole handicaps; the app halves them for 9 holes and applies each format's %. Plus handicaps: type +2 (or −2).</p>
@@ -676,7 +684,7 @@ function applySetupLock(){
   for(const id of['lk-players','lk-finish']){const f=$(id);if(f)f.disabled=held}
   const c=$('clear');if(c)c.disabled=!held&&live&&!lockOvr;
   if(sugFor&&sugFor.closest('fieldset:disabled'))sugClose()}
-const pairRow=p=>`<div class="pair" data-id="${esc(p.id)}">
+const pairRow=p=>`<div class="pair" data-id="${esc(p.id)}"${Number.isInteger(p.tg)?` data-tg="${p.tg}"`:''}>
   <div class="full"><input data-f="name" placeholder="Team name (optional)" value="${esc(p.name||'')}"><button class="x" type="button" data-rm aria-label="Remove pair">×</button></div>
   <input data-f="p1" autocomplete="off" autocapitalize="words" enterkeyhint="next" placeholder="Player 1 (tap to pick)" value="${esc(p.p1||'')}"><input data-f="h1" inputmode="decimal" placeholder="H'cap" value="${esc(fmtH(p.h1))}">
   <input data-f="p2" autocomplete="off" autocapitalize="words" enterkeyhint="next" placeholder="Player 2 (tap to pick)" value="${esc(p.p2||'')}"><input data-f="h2" inputmode="decimal" placeholder="H'cap" value="${esc(fmtH(p.h2))}">
@@ -841,28 +849,65 @@ async function wlAdd(i,btn){const r=wl.res,u=r&&r.unk[+i];if(!u)return;
   toast(have?(kept?`${k} ticked. “${u.name}” will be recognised as ${have.n} next time.`:`${k} is on the players list, now ticked.`):`${k} added to the players list (${fmtH(np.h)}) and ticked.`,4000)}
 function rnd(n){const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]%n}
 function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
-function drawPairs(bal){let pl=shuffle(P.filter(p=>drawSel.has(pkey(p))));let left=null;
-  if(pl.length%2){left=pl.pop()}
-  let pairs=[];
-  if(bal){pl.sort((a,b)=>(+a.h||0)-(+b.h||0));const h=pl.length/2;for(let i=0;i<h;i++)pairs.push([pl[i],pl[pl.length-1-i]]);pairs=shuffle(pairs)}
-  else for(let i=0;i<pl.length;i+=2)pairs.push([pl[i],pl[i+1]]);
-  if(left&&pairs.length){let k;if(bal){const sum=pr=>pr.reduce((a,x)=>a+(+x.h||0),0);k=pairs.reduce((bi,pr,i)=>Math.abs(sum(pr)/2-(+left.h||0))>Math.abs(sum(pairs[bi])/2-(+left.h||0))?i:bi,0)}else k=rnd(pairs.length);pairs[k].push(left);left=null}
+// Balanced draw, the way golf societies do an "A/B draw": sort the field by handicap, split it into a lower half (A) and a higher half (B),
+// and give every pair one A and one B, so a 36 is never paired with another high handicap. Of thousands of random A/B pairings we keep only
+// the ones whose pair totals are the most even (within 2 shots of the best possible) and pick one of those at random, so the teams are fair
+// but still change from week to week. With an odd number the middle handicap is left over and joins the pair with the highest total
+// (a team of three counts its best 2 scores on holes 1–3, so it goes to the pair that needs the help most).
+const hcp=x=>+x.h||0;
+function balancedPairs(players){const s=shuffle(players).sort((a,b)=>hcp(a)-hcp(b));let mid=null;   // shuffled first, so equal handicaps land in a random order
+  if(s.length%2)mid=s.splice(Math.floor(s.length/2),1)[0];
+  const n=s.length/2,A=s.slice(0,n),B=s.slice(n),sum=pr=>pr.reduce((a,x)=>a+hcp(x),0);
+  if(!n)return{pairs:[],left:mid};
+  const cands=[];
+  const score=pr=>{const t=pr.map(sum);return{pr,sp:Math.max(...t)-Math.min(...t)}};
+  cands.push(score(A.map((a,i)=>[a,B[n-1-i]])));                                           // lowest with highest: about as even as it gets
+  const quick=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};   // trial shuffles only
+  for(let t=0;t<4000;t++){const b=quick(B);cands.push(score(A.map((a,i)=>[a,b[i]])))}
+  const best=Math.min(...cands.map(c=>c.sp)),pool=cands.filter(c=>c.sp<=best+2);
+  const pick=pool[rnd(pool.length)];let pairs=shuffle(pick.pr.map(pr=>shuffle(pr)));
+  if(mid){const k=pairs.reduce((bi,pr,i)=>sum(pr)>sum(pairs[bi])?i:bi,0);pairs[k].push(mid);mid=null}
+  return{pairs,left:mid}}
+function drawPairs(bal){const chosen=P.filter(p=>drawSel.has(pkey(p)));
+  if(bal)return balancedPairs(chosen);
+  let pl=shuffle(chosen),left=null;if(pl.length%2)left=pl.pop();
+  const pairs=[];for(let i=0;i<pl.length;i+=2)pairs.push([pl[i],pl[i+1]]);
+  if(left&&pairs.length){pairs[rnd(pairs.length)].push(left);left=null}
   return{pairs,left}}
 // ---------- share the teams to the WhatsApp group ----------
 // teams: [{name, ps:[{n,h}]}]. Plain text so it reads well in WhatsApp; the app link at the end opens the live scores.
+// Shotgun start: two teams (a 4-ball) on each tee, from hole 1 in team order. A team of three, or a pair left on its own, is a smaller and
+// quicker group, so those go out from the last holes used (the lone pair last of all).
+function teeGroups(items,three,tg=x=>x.tg){
+  if(items.length&&items.every(x=>Number.isInteger(tg(x)))){const m=new Map();for(const x of items){const g=tg(x);if(!m.has(g))m.set(g,[]);m.get(g).push(x)}   // saved holes
+    return [...m.keys()].sort((a,b)=>a-b).map(g=>({hole:g%9+1,second:g>=9,xs:m.get(g)}))}const twos=items.filter(x=>!three(x)),threes=items.filter(three),g=[];
+  for(let i=0;i+1<twos.length;i+=2)g.push([twos[i],twos[i+1]]);
+  threes.forEach(x=>g.push([x]));if(twos.length%2)g.push([twos[twos.length-1]]);
+  return g.map((xs,i)=>({hole:i%9+1,second:i>=9,xs,i}))}
+// give every pair its starting hole when Setup is saved: a fresh draw gets the full grouping; pairs that already have one keep it, and
+// pairs added later go out after the groups already used
+function assignTees(pairs){const list=pairs.filter(x=>x.p1||x.p2),have=list.filter(x=>Number.isInteger(x.tg)),fresh=list.filter(x=>!Number.isInteger(x.tg));
+  if(!have.length){teeGroups(list,is3,()=>null).forEach(g=>g.xs.forEach(x=>x.tg=g.i));return pairs}
+  const next=Math.max(...have.map(x=>x.tg))+1;teeGroups(fresh,is3,()=>null).forEach(g=>g.xs.forEach(x=>x.tg=next+g.i));return pairs}
+const teeOf=p=>{const g=teeGroups(R.pairs.filter(x=>x.p1||x.p2),is3).find(x=>x.xs.includes(p));return g?g.hole:1};   // saved hole, or worked out for an older round
 function teamsMsg(teams){
   const who=t=>{const x=t.ps.map(p=>p.n+(p.h!==''&&p.h!=null?` (${fmtH(p.h)})`:''));return x.length>2?x.slice(0,-1).join(', ')+' & '+x[x.length-1]:x.join(' & ')};
   const nm=t=>t.name.replace(/[*_~`]/g,'').trim();
-  return `⛳ ${R.title||'Golf'}${R.course?' · '+R.course:''}\nTeams:\n\n`+teams.map((t,i)=>`${i+1}. ${nm(t)?`*${nm(t)}*: `:''}${who(t)}`).join('\n')+
+  return `⛳ ${R.title||'Golf'}${R.course?' · '+R.course:''}\nTeams and starting holes:\n\n`+
+    teeGroups(teams,t=>t.ps.length>2).map(g=>`*Hole ${g.hole}*${g.second?' (2nd group)':''}\n`+g.xs.map(t=>`${t.num}. ${nm(t)?`*${nm(t)}*: `:''}${who(t)}`).join('\n')).join('\n\n')+
     `\n\nLive scores: ${appUrl()}`}
-const savedTeams=()=>R.pairs.filter(p=>p.p1||p.p2).map(p=>({name:p.name||'',ps:[{n:p.p1||'Player 1',h:p.h1},{n:p.p2||'Player 2',h:p.h2},...(p.p3?[{n:p.p3,h:p.h3}]:[])]}));
+const savedTeams=()=>R.pairs.filter(p=>p.p1||p.p2).map((p,i)=>({num:i+1,tg:p.tg,name:p.name||'',ps:[{n:p.p1||'Player 1',h:p.h1},{n:p.p2||'Player 2',h:p.h2},...(p.p3?[{n:p.p3,h:p.h3}]:[])]}));
 const pairIds=()=>R.pairs.map(p=>p.id).join();
 const waUrl=txt=>'https://wa.me/?text='+encodeURIComponent(txt);
 async function copyTeams(txt){try{await navigator.clipboard.writeText(txt);toast('Teams copied. Paste them into the WhatsApp group.',3500)}catch{toast('Could not copy. Use Share on WhatsApp instead.')}}
 function drawName(x,all){return sugName(x)}
 function showDraft(){const el=$('dres');if(!el)return;
   if(!draft){el.innerHTML=sharedIds&&sharedIds===pairIds()?`<div class="shareok"><p>✓ Teams saved. Send them to the group:</p><div class="row"><a class="btn wa" id="dshare" href="#" target="_blank" rel="noopener">Share on WhatsApp</a><a class="btn ghost copy" id="dcopy" href="#" role="button">Copy teams</a></div></div>`:'';return}
-  el.innerHTML=draft.pairs.map((pr,i)=>`<div><span><b>${pr.length===3?'Three':'Pair'} ${i+1}</b> &nbsp;${pr.map(x=>esc(x.n)).join(' &amp; ')}</span><span class="note" style="margin:0">${pr.map(x=>esc(fmtH(x.h))).join(' · ')}</span></div>`).join('')+
+  const tot=pr=>fmtH(Math.round(pr.reduce((a,x)=>a+(+x.h||0),0)*10)/10);
+  el.innerHTML=draft.pairs.map((pr,i)=>dEdit
+    ?`<div class="dpair"><div class="hd"><b>${pr.length===3?'Three':'Pair'} ${i+1}</b><span class="note" style="margin:0">total ${tot(pr)}</span></div><div class="chips">${pr.map((x,k)=>`<button type="button" class="dchip${dPick&&dPick[0]===i&&dPick[1]===k?' on':''}${draft.sw&&draft.sw.includes(i+':'+k)?' sw':''}" data-sw="${i}:${k}">${esc(x.n)}<small>${esc(fmtH(x.h))}</small></button>`).join('')}</div></div>`
+    :`<div><span><b>${pr.length===3?'Three':'Pair'} ${i+1}</b> &nbsp;${pr.map(x=>esc(x.n)).join(' &amp; ')}</span><span class="note" style="margin:0">${pr.map(x=>esc(fmtH(x.h))).join(' · ')}${pr.length>1?` <b style="font:600 13px Inter,system-ui,sans-serif">(${tot(pr)})</b>`:''}</span></div>`).join('')+
+  `<label class="chk"><input type="checkbox" id="dedit" ${dEdit?'checked':''}><span>Change pairs by hand<small>${dEdit?(dPick?`Now tap who ${esc(draft.pairs[dPick[0]][dPick[1]].n)} swaps with`:'Tap a player, then tap who they swap with'):'Swap players between pairs before you use them'}</small></span></label>`+
   (draft.pairs.some(pr=>pr.length===3)?`<p class="note">Odd number, so one team of three. They count the best 2 of 3 scores on holes 1–3, with adjusted Greensomes and Scramble handicaps.</p>`:'')+
   (draft.left?`<p class="note" style="color:#a01826">Odd number: <b>${esc(draft.left.n)}</b> is left over. Tick one more player, or add them to a pair yourself below.</p>`:'')+
   `<div style="border:0;padding:0;gap:8px"><button class="btn ghost" id="dagain" type="button" style="flex:1">Draw again</button><button class="btn" id="duse" type="button" style="flex:1">Use these pairs</button></div>`}
@@ -1014,6 +1059,7 @@ $('v-setup').addEventListener('input',e=>{const t=e.target;if(t.closest('.pinf')
   if(t.id==='dsearch'){dq=t.value.trim().toLowerCase();document.querySelectorAll('#dlist .chk').forEach(l=>l.hidden=dq&&!l.dataset.q.includes(dq));return}
   if(t.dataset.dp!==undefined){t.checked?drawSel.add(t.dataset.dp):drawSel.delete(t.dataset.dp);ls.set('gs-draw2',[...drawSel]);$('dcount').textContent=drawSel.size;return}
   if(t.id==='dbal'){dbal=t.checked;return}
+  if(t.id==='dedit'){dEdit=t.checked;dPick=null;if(draft)draft.sw=null;showDraft();return}
   setupDirty=true;
   const f=t.dataset.f;if(f==='p1'||f==='p2'||f==='p3'){const m=findP(t.value),h=t.closest('.pair').querySelector(`[data-f=h${f[1]}]`);
     if(m){if(h){h.value=fmtH(m.h);h.dataset.auto=1;h.classList.add('filled');setTimeout(()=>h.classList.remove('filled'),900)}}
@@ -1030,6 +1076,13 @@ $('v-setup').addEventListener('click',async e=>{const t=e.target.closest('button
     if(!savedTeams().length){e.preventDefault();toast('No pairs yet. Draw or add them first.');return}
     if(setupDirty){e.preventDefault();toast('Tap Save setup (below the course card) first, then share.',3500);return}
     const txt=teamsMsg(savedTeams());if(t.id==='pshare'||t.id==='dshare')t.href=waUrl(txt);else{e.preventDefault();copyTeams(txt)}return}   // the link opens after this handler, with the new href
+  if(t.matches('[data-sw]')&&draft){const [a,b]=t.dataset.sw.split(':').map(Number);
+    if(!dPick){dPick=[a,b];draft.sw=null;showDraft();return}
+    if(dPick[0]===a&&dPick[1]===b){dPick=null;showDraft();return}                       // tapped the same player again: cancel
+    const [c,d]=dPick;dPick=null;
+    if(c===a){draft.sw=null;showDraft();toast('They’re already in the same pair. Tap someone in another pair.',3000);return}
+    const x=draft.pairs[c][d],y=draft.pairs[a][b];draft.pairs[c][d]=y;draft.pairs[a][b]=x;draft.sw=[c+':'+d,a+':'+b];useArmed=0;showDraft();
+    toast(`Swapped ${x.n} and ${y.n}`,2000);return}
   if(t.id==='wlgo'){const ta=$('wltext');wl.text=ta?ta.value:wl.text;wlRun();return}
   if(t.id==='wlpaste'){try{const v=await navigator.clipboard.readText();if(!v||!v.trim())throw 0;const ta=$('wltext');ta.value=wl.text=v;wlRun()}
     catch{toast('Long-press the box and tap Paste.',3000);$('wltext')?.focus()}return}
@@ -1044,7 +1097,7 @@ $('v-setup').addEventListener('click',async e=>{const t=e.target.closest('button
   else if(t.matches('[data-add3]')){t.insertAdjacentHTML('afterend',p3Inputs({}));t.remove();setupDirty=true}
   else if(t.matches('[data-rm]')){t.closest('.pair').remove();setupDirty=true;if(sharedIds){sharedIds=null;showDraft()}}
   else if(t.id==='dall'||t.id==='dnone'){document.querySelectorAll('#dlist .chk:not([hidden]) input').forEach(i=>{i.checked=t.id==='dall';i.checked?drawSel.add(i.dataset.dp):drawSel.delete(i.dataset.dp)});ls.set('gs-draw2',[...drawSel]);$('dcount').textContent=drawSel.size}
-  else if(t.id==='ddraw'||t.id==='dagain'){if(drawSel.size<2){toast('Tick at least 2 players');return}draft=drawPairs($('dbal').checked);sharedIds=null;shareNext=false;useArmed=0;showDraft()}
+  else if(t.id==='ddraw'||t.id==='dagain'){if(drawSel.size<2){toast('Tick at least 2 players');return}draft=drawPairs($('dbal').checked);dPick=null;sharedIds=null;shareNext=false;useArmed=0;showDraft()}
   else if(t.id==='duse'){if(!draft||!setupWriteOk())return;if($('save').disabled){toast('Still saving the last change. Try again in a moment.');return}
     const scored=R.pairs.some(p=>Object.values(S[p.id]||{}).some(v=>v!=null));
     if(scored&&Date.now()-useArmed>5000){useArmed=Date.now();t.classList.add('armed');t.textContent='Scores exist! Tap again';toast('This round already has scores. Archive it first (bottom of Setup), or tap again to replace the pairs. Old scores stop counting.',5000);return}
@@ -1057,11 +1110,11 @@ $('v-setup').addEventListener('click',async e=>{const t=e.target.closest('button
   else if(t.id==='savep'){if(!setupWriteOk())return;const list=[...document.querySelectorAll('.prow')].map(r=>{const o={n:r.querySelector('[data-pn]').value.trim(),l:r.querySelector('[data-pl]').value.trim(),h:parseH(r.querySelector('[data-ph]').value)},ak=r.querySelector('[data-pa]'),a=ak?JSON.parse(ak.dataset.pa||'[]'):[];if(a.length)o.a=a;return o}).filter(p=>p.n);
     const seen=new Set(),dup=list.find(p=>{const k=pkey(p).toLowerCase();if(seen.has(k))return true;seen.add(k)});if(dup){toast(`${pkey(dup)} is on the list twice`);return}
     try{t.disabled=true;await savePlayers(list);P=list;setupDirty=false;toast('Players saved')}catch(err){toast('Not saved: '+(err.code||err.message))}finally{t.disabled=false}}
-  else if(t.id==='save'){if(!setupWriteOk())return;const pairs=[...document.querySelectorAll('.pair')].map(r=>{const o={id:r.dataset.id};
+  else if(t.id==='save'){if(!setupWriteOk())return;const pairs=[...document.querySelectorAll('.pair')].map(r=>{const o={id:r.dataset.id};if(r.dataset.tg!=null&&r.dataset.tg!=='')o.tg=+r.dataset.tg;
       r.querySelectorAll('[data-f]').forEach(i=>{const f=i.dataset.f,v=i.value.trim();if((f==='p3'||f==='h3')&&!r.querySelector('[data-f=p3]').value.trim())return;o[f]=f[0]==='h'?parseH(v):v});return o});
     const par=[...document.querySelectorAll('[data-par]')].map(i=>Math.min(7,Math.max(3,parseInt(i.value)||4))),si=[...document.querySelectorAll('[data-si]')].map(i=>parseInt(i.value)||0);
     if(new Set(si).size!==9||si.some(v=>v<1||v>18)){shareNext=false;toast('Each hole needs its own SI (1–18). Check the course card.');return}
-    try{t.disabled=true;await saveRound({title:$('t-title').value.trim(),course:$('t-course').value.trim(),par,si,pairs});setupDirty=false;toast('Setup saved');
+    try{t.disabled=true;await saveRound({title:$('t-title').value.trim(),course:$('t-course').value.trim(),par,si,pairs:assignTees(pairs)});setupDirty=false;toast('Setup saved');
       if(shareNext){shareNext=false;sharedIds=pairs.map(p=>p.id).join();showDraft();const d=$('dres');if(d)d.scrollIntoView({behavior:reduce?'auto':'smooth',block:'center'})}}
     catch(err){shareNext=false;toast('Not saved: '+(err.code||err.message))}finally{t.disabled=false}}
   else if(t.id==='arch'){const un=unfinished();
