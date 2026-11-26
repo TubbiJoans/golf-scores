@@ -186,6 +186,12 @@ input:focus,select:focus,button:focus-visible{outline:3px solid #9ad3b4;outline-
 .segh span{font:500 13px Inter;color:var(--mut)}
 .jump{display:block;width:100%;margin-top:10px}
 /* setup */
+.sugg{position:absolute;z-index:65;overscroll-behavior:contain;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 28px rgba(14,59,44,.22);max-height:264px;overflow:auto;padding:4px}
+.sugg button{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;min-height:44px;border:0;background:none;border-radius:8px;padding:6px 10px;font:600 15px Inter,system-ui,sans-serif;color:var(--ink);text-align:left;cursor:pointer}
+.sugg button:active,.sugg button.on{background:var(--g3)}
+.sugg small{font-weight:400;color:var(--mut);font-size:12.5px;white-space:nowrap}
+.sugg .none{padding:10px;font-size:13px;color:var(--mut)}
+.pair input{scroll-margin-top:76px}
 .pair{display:grid;grid-template-columns:minmax(0,1fr) 84px;gap:8px;padding:12px 0;border-top:1px solid var(--line)}
 .pair .full{grid-column:1/-1;display:flex;gap:8px}
 .pair .full input{flex:1}
@@ -229,6 +235,7 @@ h2.sec{font:700 22px "Barlow Condensed",system-ui,sans-serif;margin:0 0 8px}
 .hist .w{font:700 22px "Barlow Condensed",system-ui,sans-serif;color:var(--g);white-space:nowrap}
 #modal{position:fixed;inset:0;background:rgba(10,30,22,.72);z-index:60;display:flex;align-items:center;justify-content:center;padding:20px}
 #modal[hidden]{display:none}
+[hidden]{display:none!important}
 #modal .box{background:#fff;border-radius:16px;padding:14px;max-width:420px;width:100%;max-height:90vh;overflow:auto;text-align:center}
 #modal img{width:100%;border-radius:10px;display:block;margin-bottom:10px}
 #confetti{position:fixed;inset:0;pointer-events:none;z-index:78}
@@ -428,7 +435,7 @@ function render(kind){loadFeed();
   else if(view==='score'){if(document.activeElement&&document.activeElement.id==='pairsel')return;renderScore()}
   else if(view==='results')renderResults();
   else if(view==='hist')renderHist();
-  else if(kind!=='scores'&&!setupDirty)renderSetup();     // scores arriving never wipe the organiser's Setup screen
+  else if(kind!=='scores'&&!setupDirty){if(document.activeElement&&document.activeElement.matches('#v-setup input'))setupStale=true;else renderSetup()}   // never redraw under the organiser's fingers…
   else updArch();                                          // …but the archive lock follows the scores live
 }
 function renderBoard(){
@@ -496,7 +503,7 @@ function renderScore(){
   const p=R.pairs.find(x=>x.id===mine),c=card(p);
   const pop=lastPop&&Date.now()-lastPop.t<700&&lastPop.pid===mine?lastPop.key:null;
   el.innerHTML=`<div class="panel">${sel}
-    <p class="note">Total <b>${c.tot} pts</b> · ${c.thru===9?'finished 🎉':'thru '+c.thru}. Tap + to start at par. Below 1 = pick-up (0 pts).</p>
+    <p class="note">Total <b>${c.tot} pts</b> · ${c.thru===9?'finished 🎉':'thru '+c.thru}. Tap + to start at par, or − to start at a birdie. Below 1 = pick-up (0 pts).</p>
     ${c.thru<9?`<button class="btn ghost jump" data-jump="${c.on||1}">Go to hole ${c.on||1} ↓</button>`:''}</div>`+
   c.holes.map(h=>(h.h%3===1?`<div class="segh" style="--c:${FMT[h.f].c}">${FMT[h.f].n} · holes ${h.h}–${h.h+2}${h.f===0&&c.three?' · best 2 of 3 count':''}<span>${c.seg[h.f]} pts</span></div>`:'')+
    `<div class="hole" id="hole-${h.h}" style="--c:${FMT[h.f].c}"><div class="hh"><b>Hole ${h.h}</b><span>Par ${h.par} · SI ${esc(h.si)}</span></div>${h.e.map(x=>`
@@ -520,8 +527,7 @@ function renderSetup(){
     <label class="chk" style="background:none;padding:0"><input type="checkbox" id="dbal" ${dbal?'checked':''}><span>Balance by handicap<small>Pairs a low handicap with a high one</small></span></label>
     <button class="btn" id="ddraw" type="button" style="width:100%;margin-top:8px">Draw pairs (<span id="dcount">${drawSel.size}</span> playing)</button>
     <div id="dres" class="dres"></div></div>
-  <div class="panel"><h2 class="sec">Pairs</h2><p class="note" style="margin:0">Start typing a player's name and pick them from the list. Their handicap fills in automatically. Use normal 18-hole handicaps; the app halves them for 9 holes and applies each format's %. Plus handicaps: type +2 (or −2).</p>
-    <datalist id="roster">${[...P].sort((a,b)=>a.n.localeCompare(b.n)).map(p=>`<option value="${esc(p.n)}">${esc(p.n+' '+p.l+' · '+fmtH(p.h))}</option>`).join('')}</datalist>
+  <div class="panel"><h2 class="sec">Pairs</h2><p class="note" style="margin:0">Tap a player box to pick from the players list, or start typing to narrow it. Their handicap fills in automatically. A guest who isn't on the list: just type their name and handicap. Use normal 18-hole handicaps; the app halves them for 9 holes and applies each format's %. Plus handicaps: type +2 (or −2).</p>
     <div id="pairs">${R.pairs.map(pairRow).join('')}</div>
     <button class="btn ghost" id="addp" type="button" style="width:100%;margin-top:6px">+ Add pair</button>
     <div class="row" style="margin-top:8px"><a class="btn wa" id="pshare" href="#" target="_blank" rel="noopener">Share teams on WhatsApp</a><button class="btn ghost" id="pcopy" type="button" style="flex:0 0 auto">Copy</button></div></div>
@@ -545,12 +551,43 @@ function renderSetup(){
 }
 const pairRow=p=>`<div class="pair" data-id="${esc(p.id)}">
   <div class="full"><input data-f="name" placeholder="Team name (optional)" value="${esc(p.name||'')}"><button class="x" type="button" data-rm aria-label="Remove pair">×</button></div>
-  <input data-f="p1" list="roster" autocomplete="off" placeholder="Player 1" value="${esc(p.p1||'')}"><input data-f="h1" inputmode="decimal" placeholder="H'cap" value="${esc(fmtH(p.h1))}">
-  <input data-f="p2" list="roster" autocomplete="off" placeholder="Player 2" value="${esc(p.p2||'')}"><input data-f="h2" inputmode="decimal" placeholder="H'cap" value="${esc(fmtH(p.h2))}">
+  <input data-f="p1" autocomplete="off" autocapitalize="words" enterkeyhint="next" placeholder="Player 1 (tap to pick)" value="${esc(p.p1||'')}"><input data-f="h1" inputmode="decimal" placeholder="H'cap" value="${esc(fmtH(p.h1))}">
+  <input data-f="p2" autocomplete="off" autocapitalize="words" enterkeyhint="next" placeholder="Player 2 (tap to pick)" value="${esc(p.p2||'')}"><input data-f="h2" inputmode="decimal" placeholder="H'cap" value="${esc(fmtH(p.h2))}">
   ${p.p3?p3Inputs(p):`<button class="btn ghost add3" type="button" data-add3 style="grid-column:1/-1;min-height:40px;padding:6px">+ 3rd player (odd numbers)</button>`}</div>`;
-const p3Inputs=p=>`<input data-f="p3" list="roster" autocomplete="off" placeholder="Player 3" value="${esc(p.p3||'')}"><input data-f="h3" inputmode="decimal" placeholder="H'cap" value="${esc(fmtH(p.h3))}">`;
+const p3Inputs=p=>`<input data-f="p3" autocomplete="off" autocapitalize="words" enterkeyhint="next" placeholder="Player 3 (tap to pick)" value="${esc(p.p3||'')}"><input data-f="h3" inputmode="decimal" placeholder="H'cap" value="${esc(fmtH(p.h3))}">`;
 const newId=()=>Date.now().toString(36).slice(-4)+Math.random().toString(36).slice(2,7);
-const findP=v=>{v=String(v||'').trim().toLowerCase().replace(/\s+/g,' ');return v&&(P.find(p=>pkey(p).toLowerCase()===v)||P.find(p=>p.n.toLowerCase()===v))};
+// ---------- player suggestions for the pair name boxes ----------
+let sugEl=null,sugFor=null;
+const sugName=p=>{const t=P.filter(y=>y.n===p.n);if(t.length<2)return p.n;const i=(p.l||'')[0]||'';   // first name; + initial if two share it; full surname if the initial is shared too
+  return t.filter(y=>((y.l||'')[0]||'')===i).length>1?pkey(p):(p.n+' '+i).trim()};
+function sugOpen(inp){sugFor=inp;if(!sugEl){sugEl=document.createElement('div');sugEl.className='sugg';sugEl.setAttribute('role','listbox');document.body.appendChild(sugEl);
+    sugEl.addEventListener('pointerdown',e=>e.preventDefault());                       // keep the keyboard/focus while tapping a name
+    sugEl.addEventListener('click',e=>{const b=e.target.closest('[data-sug]');if(b)sugPick(b.dataset.sug)})}
+  sugDraw();setTimeout(()=>{if(sugFor===inp){inp.scrollIntoView({block:'start',behavior:reduce?'auto':'smooth'});setTimeout(sugDraw,350)}},350)}   // once the keyboard is up
+function sugDraw(){if(!sugEl||!sugFor)return;if(!sugFor.isConnected)return sugClose();
+  const cur=findP(sugFor.value),q=cur?'':sugFor.value.trim().toLowerCase();
+  const used=new Set([...document.querySelectorAll('#pairs [data-f=p1],#pairs [data-f=p2],#pairs [data-f=p3]')].filter(i=>i!==sugFor).map(i=>i.value.trim().toLowerCase()).filter(Boolean));
+  const list=[...P].sort((a,b)=>a.n.localeCompare(b.n)||(a.l||'').localeCompare(b.l||'')).filter(p=>!q||pkey(p).toLowerCase().includes(q));
+  sugEl.innerHTML=list.length?list.map(p=>{const u=used.has(sugName(p).toLowerCase());return `<button type="button" role="option" data-sug="${esc(pkey(p))}"${p===cur?' class="on"':''}${u?' style="opacity:.45"':''}><span>${esc(p.n)} ${esc(p.l||'')}${u?' <small>(in a pair)</small>':''}</span><small>${esc(fmtH(p.h))}</small></button>`}).join('')
+    :`<div class="none">No player called “${esc(sugFor.value.trim())}”. Keep typing to add them as a guest, then enter their handicap.</div>`;
+  const r=sugFor.getBoundingClientRect(),vv=window.visualViewport,vTop=vv?vv.offsetTop:0,vBot=vv?vv.offsetTop+vv.height:innerHeight;
+  const below=vBot-r.bottom-8,above=r.top-vTop-64,up=below<150&&above>below,room=Math.max(120,Math.min(300,up?above:below));
+  Object.assign(sugEl.style,{left:(r.left+scrollX)+'px',width:Math.max(r.width,list.length?260:r.width)+'px',maxHeight:room+'px',display:'block'});
+  sugEl.style.top=(up?r.top+scrollY-4-Math.min(room,sugEl.scrollHeight):r.bottom+scrollY+4)+'px'}
+function sugClose(){if(sugEl)sugEl.style.display='none';sugFor=null}
+function sugPick(key){const inp=sugFor,p=P.find(x=>pkey(x)===key);if(!inp||!p||!inp.isConnected)return sugClose();
+  inp.value=sugName(p);const h=inp.closest('.pair').querySelector(`[data-f=h${inp.dataset.f[1]}]`);if(h){h.value=fmtH(p.h);h.dataset.auto=1;h.classList.add('filled');setTimeout(()=>h.classList.remove('filled'),900)}
+  setupDirty=true;if(sharedIds){sharedIds=null;showDraft()}sugClose();inp.blur()}
+document.addEventListener('focusin',e=>{const t=e.target;if(t.matches&&t.matches('#pairs [data-f=p1],#pairs [data-f=p2],#pairs [data-f=p3]'))sugOpen(t);else if(!(sugEl&&sugEl.contains(t)))sugClose()});
+// …but catch up with changes from another phone as soon as they leave the box (unless they have unsaved edits of their own)
+let setupStale=false;
+document.addEventListener('focusout',e=>{if(!setupStale||!e.target.matches||!e.target.matches('#v-setup input'))return;
+  setTimeout(()=>{if(setupStale&&view==='setup'&&!setupDirty&&!(document.activeElement&&document.activeElement.matches('#v-setup input'))){setupStale=false;renderSetup()}},200)});
+document.addEventListener('focusout',e=>{if(e.target===sugFor)setTimeout(()=>{if(document.activeElement!==sugFor)sugClose()},150)});
+document.addEventListener('input',e=>{if(e.target===sugFor)sugDraw()});
+addEventListener('resize',()=>{if(sugFor)sugDraw()});
+if(window.visualViewport){visualViewport.addEventListener('resize',()=>{if(sugFor)sugDraw()});visualViewport.addEventListener('scroll',()=>{if(sugFor)sugDraw()})}
+const findP=v=>{v=String(v||'').trim().toLowerCase().replace(/\s+/g,' ');return v&&(P.find(p=>pkey(p).toLowerCase()===v)||P.find(p=>sugName(p).toLowerCase()===v)||P.find(p=>p.n.toLowerCase()===v))};
 const parseH=v=>{v=String(v??'').trim().replace(/\s/g,'');if(v==='')return 0;const n=parseFloat(v.replace(/^\+/,'-').replace(/^[−–]/,'-').replace(',','.'));return isFinite(n)?n:0};
 const playerRow=p=>`<div class="prow"><input data-pn value="${esc(p.n||'')}" placeholder="First name" aria-label="First name"><input data-pl value="${esc(p.l||'')}" placeholder="Surname" aria-label="Surname"><input data-ph inputmode="decimal" value="${esc(fmtH(p.h))}" placeholder="H'cap" aria-label="Handicap"><button class="x" type="button" data-prm aria-label="Remove player">×</button></div>`;
 function rnd(n){const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]%n}
@@ -573,7 +610,7 @@ const savedTeams=()=>R.pairs.filter(p=>p.p1||p.p2).map(p=>({name:p.name||'',ps:[
 const pairIds=()=>R.pairs.map(p=>p.id).join();
 const waUrl=txt=>'https://wa.me/?text='+encodeURIComponent(txt);
 async function copyTeams(txt){try{await navigator.clipboard.writeText(txt);toast('Teams copied. Paste them into the WhatsApp group.',3500)}catch{toast('Could not copy. Use Share on WhatsApp instead.')}}
-function drawName(x,all){return all.filter(y=>y.n===x.n).length>1?`${x.n} ${(x.l||'')[0]||''}`.trim():x.n}
+function drawName(x,all){return sugName(x)}
 function showDraft(){const el=$('dres');if(!el)return;
   if(!draft){el.innerHTML=sharedIds&&sharedIds===pairIds()?`<div class="shareok"><p>✓ Teams saved. Send them to the group:</p><div class="row"><a class="btn wa" id="dshare" href="#" target="_blank" rel="noopener">Share on WhatsApp</a><button class="btn ghost" id="dcopy" type="button">Copy teams</button></div></div>`:'';return}
   el.innerHTML=draft.pairs.map((pr,i)=>`<div><span><b>${pr.length===3?'Three':'Pair'} ${i+1}</b> &nbsp;${pr.map(x=>esc(x.n)).join(' &amp; ')}</span><span class="note" style="margin:0">${pr.map(x=>esc(fmtH(x.h))).join(' · ')}</span></div>`).join('')+
@@ -603,7 +640,7 @@ function renderResults(){
       <div class="hlc" style="--c:var(--gold)"><span>Birdies</span><b>${s.birdies}</b><small>birdie${s.birdies===1?'':'s'} or better</small></div>
       ${FMT.map((f,k)=>`<div class="hlc" style="--c:${f.c}"><span>Top ${f.n}</span><b>${s.fmtBest[k]?esc(teamName(s.fmtBest[k].p)):'–'}</b><small>${s.fmtBest[k]?s.fmtBest[k].pts+' pts, holes '+(k*3+1)+'–'+(k*3+3):''}</small></div>`).join('')}
     </div>
-    <button class="btn" id="share" type="button" style="width:100%">📤 Share results image</button>`:''}
+    ${isAdmin()?`<button class="btn" id="share" type="button" style="width:100%">📤 Share results image</button>`:''}`:''}
     ${resSrc?'':`<button class="btn ghost" data-go="hist" type="button" style="width:100%;margin-top:8px">🗂 Past rounds</button>`}`;
 }
 async function loadHist(){if(LOCAL)return ls.get('gs-demo-H',[]);
@@ -690,7 +727,7 @@ function applyScores(n){
   render('scores')}
 
 // ---------- events ----------
-function showView(v,fromBack){if(view==='setup'&&setupDirty&&v!=='setup'&&!confirmLeave())return false;
+function showView(v,fromBack){sugClose();if(view==='setup'&&setupDirty&&v!=='setup'&&!confirmLeave())return false;
   if(!fromBack&&v!==view)navTo(v);
   view=v;const tab=v==='results'||v==='hist'?'board':v;document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x.dataset.v===tab));
   for(const s of['board','score','setup','results','hist']){const e=$('v-'+s);e.hidden=s!==view;e.classList.remove('show');if(s===view){void e.offsetWidth;e.classList.add('show')}}
@@ -709,7 +746,7 @@ document.addEventListener('click',async e=>{const go=e.target.closest('[data-go]
   if(e.target.closest('[data-exit]')){exitChoice();return}
   if($('modal').dataset.kind==='exit'&&e.target.id==='modal'){exitChoice();return}
   if(e.target.closest('[data-close]')||e.target.id==='modal'){$('modal').hidden=true;ovDone('modal');return}
-  if(e.target.id==='share'){const b=e.target;b.disabled=true;try{await shareImage(resSrc||liveSrc())}catch(err){toast('Could not make the image: '+err.message)}finally{b.disabled=false}}
+  if(e.target.id==='share'&&isAdmin()){const b=e.target;b.disabled=true;try{await shareImage(resSrc||liveSrc())}catch(err){toast('Could not make the image: '+err.message)}finally{b.disabled=false}}
   const j=e.target.closest('[data-jump]');if(j){$('hole-'+j.dataset.jump)?.scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'})}});
 document.addEventListener('submit',async e=>{const fm=e.target;if(!fm.classList.contains('pinf'))return;e.preventDefault();const pin=fm.querySelector('input').value,admin=fm.dataset.role==='admin';
   setupDirty=false;
@@ -719,15 +756,18 @@ document.addEventListener('submit',async e=>{const fm=e.target;if(!fm.classList.
 $('v-score').addEventListener('change',e=>{if(e.target.id==='pairsel'){ls.set('gs-pair',e.target.value);e.target.blur();render()}});
 $('v-score').addEventListener('click',e=>{const b=e.target.closest('button[data-k]');if(!b)return;const pid=myPair();if(!pid)return;buzz();
   const k=b.dataset.k,h=parseInt(k),par=+R.par[h-1]||4,cur=S[pid]?.[k];let v;
-  if(+b.dataset.d>0)v=cur==null?par:cur===0?1:Math.min(cur+1,15);else v=cur==null?null:cur===0?null:cur===1?0:cur-1;
+  if(+b.dataset.d>0)v=cur==null?par:cur===0?1:Math.min(cur+1,15);else v=cur==null?par-1:cur===0?null:cur===1?0:cur-1;   // empty: − starts at a birdie
   if(v!==(cur??null))setScore(pid,k,v)});
 $('v-setup').addEventListener('input',e=>{const t=e.target;if(t.closest('.pinf'))return;if(sharedIds&&t.closest('.pair')){sharedIds=null;showDraft()}
   if(t.id==='dsearch'){dq=t.value.trim().toLowerCase();document.querySelectorAll('#dlist .chk').forEach(l=>l.hidden=dq&&!l.dataset.q.includes(dq));return}
   if(t.dataset.dp!==undefined){t.checked?drawSel.add(t.dataset.dp):drawSel.delete(t.dataset.dp);ls.set('gs-draw2',[...drawSel]);$('dcount').textContent=drawSel.size;return}
   if(t.id==='dbal'){dbal=t.checked;return}
   setupDirty=true;
-  const f=t.dataset.f;if(f==='p1'||f==='p2'||f==='p3'){const m=findP(t.value);if(m){const h=t.closest('.pair').querySelector(`[data-f=h${f[1]}]`);if(h){h.value=fmtH(m.h);h.classList.add('filled');setTimeout(()=>h.classList.remove('filled'),900)}}}});
-$('v-setup').addEventListener('change',e=>{const t=e.target,f=t.dataset.f;if(f==='p1'||f==='p2'||f==='p3'){const m=findP(t.value);if(m)t.value=m.n}});
+  const f=t.dataset.f;if(f==='p1'||f==='p2'||f==='p3'){const m=findP(t.value),h=t.closest('.pair').querySelector(`[data-f=h${f[1]}]`);
+    if(m){if(h){h.value=fmtH(m.h);h.dataset.auto=1;h.classList.add('filled');setTimeout(()=>h.classList.remove('filled'),900)}}
+    else if(h&&h.dataset.auto){h.value='';delete h.dataset.auto}}   // was filled from the roster, now a guest: clear it
+  if(/^h[123]$/.test(f||''))delete t.dataset.auto});
+$('v-setup').addEventListener('change',e=>{const t=e.target,f=t.dataset.f;if(f==='p1'||f==='p2'||f==='p3'){const m=findP(t.value);if(m)t.value=sugName(m)}});
 $('v-setup').addEventListener('click',async e=>{const t=e.target.closest('button')||e.target;
   if(['dshare','dcopy','pshare','pcopy'].includes(t.id)){
     if(!savedTeams().length){e.preventDefault();toast('No pairs yet. Draw or add them first.');return}
