@@ -1,7 +1,7 @@
 // Golf Scores service worker: lets the app open on the course with no signal.
 // The page itself is network-first (so updates show up straight away), everything else cache-first.
 // Live scores are NOT handled here: Firestore keeps its own offline copy and syncs when back online.
-const V = 'gs-v3';
+const V = 'gs-v4';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -25,7 +25,8 @@ self.addEventListener('fetch', e => {
       const c = await caches.open(V);
       try {
         const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 4000);
-        const res = await fetch(req, { signal: ctl.signal }); clearTimeout(t);
+        // no-cache: always ask the server (cheap 304 if unchanged), so an update shows on the next open, not 10 minutes later
+        const res = await fetch(req.url, { signal: ctl.signal, cache: 'no-cache', credentials: 'same-origin' }); clearTimeout(t);
         if (res.ok) c.put('./index.html', res.clone());
         return res;
       } catch {
