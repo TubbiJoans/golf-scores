@@ -151,6 +151,12 @@ input:focus,select:focus,button:focus-visible{outline:3px solid #9ad3b4;outline-
 .btn.warn{background:#fde8ea;color:#a01826}
 .btn.warn.armed,.btn.armed{background:var(--red);color:#fff}
 .btn.gold{background:var(--gold);color:var(--g)}
+.btn.wa{background:#25d366;color:#073b2a;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
+.shareok{display:block!important;background:#e9f7ef!important;border-color:#b7e2c8!important}
+.shareok p{margin:0 0 8px;font-weight:600}
+.dres .shareok .row{display:flex;background:none;border:0;padding:0;gap:8px;align-items:stretch}
+.dres .shareok .row .btn.wa{flex:2 1 auto}.dres .shareok .row .btn{flex:1 1 auto}
+.btn.wa{text-align:center}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:end}
 .row>*{flex:1 1 140px}
 .hole{background:var(--card);border-radius:14px;margin-bottom:10px;box-shadow:0 1px 0 var(--line);border-left:6px solid var(--c);overflow:hidden;scroll-margin-top:70px}
@@ -312,7 +318,7 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ls={get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
 const pkey=p=>(p.n+' '+(p.l||'')).trim();                       // unique player key (first + surname)
-let drawSel=new Set(ls.get('gs-draw2',[])),draft=null,dq='',dbal=false,useArmed=0;
+let drawSel=new Set(ls.get('gs-draw2',[])),draft=null,shareNext=false,sharedIds=null,dq='',dbal=false,useArmed=0;
 let P=ROSTER.map(([n,l,h])=>({n,l,h})),R=structuredClone(DEF),S={},user=null,view='board',fs=null,au=null,db=null,auth=null,setupDirty=false;
 let ready=false,live=false,resSrc=null,hist=null,lastPop=null;
 const LOCAL=!firebaseConfig;
@@ -512,7 +518,8 @@ function renderSetup(){
   <div class="panel"><h2 class="sec">Pairs</h2><p class="note" style="margin:0">Start typing a player's name and pick them from the list. Their handicap fills in automatically. Use normal 18-hole handicaps; the app halves them for 9 holes and applies each format's %. Plus handicaps: type +2 (or −2).</p>
     <datalist id="roster">${[...P].sort((a,b)=>a.n.localeCompare(b.n)).map(p=>`<option value="${esc(p.n)}">${esc(p.n+' '+p.l+' · '+fmtH(p.h))}</option>`).join('')}</datalist>
     <div id="pairs">${R.pairs.map(pairRow).join('')}</div>
-    <button class="btn ghost" id="addp" type="button" style="width:100%;margin-top:6px">+ Add pair</button></div>
+    <button class="btn ghost" id="addp" type="button" style="width:100%;margin-top:6px">+ Add pair</button>
+    <div class="row" style="margin-top:8px"><a class="btn wa" id="pshare" href="#" target="_blank" rel="noopener">Share teams on WhatsApp</a><button class="btn ghost" id="pcopy" type="button" style="flex:0 0 auto">Copy</button></div></div>
   <details class="panel"><summary class="sec" style="cursor:pointer">Players &amp; handicaps (${P.length})</summary>
     <p class="note">Update a handicap here once and it fills in automatically from then on. Changes don't alter pairs already saved: re-pick the name to refresh.</p>
     <div id="players">${[...P].sort((a,b)=>a.n.localeCompare(b.n)).map(playerRow).join('')}</div>
@@ -549,8 +556,20 @@ function drawPairs(bal){let pl=shuffle(P.filter(p=>drawSel.has(pkey(p))));let le
   else for(let i=0;i<pl.length;i+=2)pairs.push([pl[i],pl[i+1]]);
   if(left&&pairs.length){let k;if(bal){const sum=pr=>pr.reduce((a,x)=>a+(+x.h||0),0);k=pairs.reduce((bi,pr,i)=>Math.abs(sum(pr)/2-(+left.h||0))>Math.abs(sum(pairs[bi])/2-(+left.h||0))?i:bi,0)}else k=rnd(pairs.length);pairs[k].push(left);left=null}
   return{pairs,left}}
+// ---------- share the teams to the WhatsApp group ----------
+// teams: [{name, ps:[{n,h}]}]. Plain text so it reads well in WhatsApp; the app link at the end opens the live scores.
+function teamsMsg(teams){
+  const who=t=>{const x=t.ps.map(p=>p.n+(p.h!==''&&p.h!=null?` (${fmtH(p.h)})`:''));return x.length>2?x.slice(0,-1).join(', ')+' & '+x[x.length-1]:x.join(' & ')};
+  const nm=t=>t.name.replace(/[*_~`]/g,'').trim();
+  return `⛳ ${R.title||'Golf'}${R.course?' · '+R.course:''}\nTeams:\n\n`+teams.map((t,i)=>`${i+1}. ${nm(t)?`*${nm(t)}*: `:''}${who(t)}`).join('\n')+
+    `\n\nLive scores: ${appUrl()}`}
+const savedTeams=()=>R.pairs.filter(p=>p.p1||p.p2).map(p=>({name:p.name||'',ps:[{n:p.p1||'Player 1',h:p.h1},{n:p.p2||'Player 2',h:p.h2},...(p.p3?[{n:p.p3,h:p.h3}]:[])]}));
+const pairIds=()=>R.pairs.map(p=>p.id).join();
+const waUrl=txt=>'https://wa.me/?text='+encodeURIComponent(txt);
+async function copyTeams(txt){try{await navigator.clipboard.writeText(txt);toast('Teams copied. Paste them into the WhatsApp group.',3500)}catch{toast('Could not copy. Use Share on WhatsApp instead.')}}
 function drawName(x,all){return all.filter(y=>y.n===x.n).length>1?`${x.n} ${(x.l||'')[0]||''}`.trim():x.n}
-function showDraft(){const el=$('dres');if(!el)return;if(!draft){el.innerHTML='';return}
+function showDraft(){const el=$('dres');if(!el)return;
+  if(!draft){el.innerHTML=sharedIds&&sharedIds===pairIds()?`<div class="shareok"><p>✓ Teams saved. Send them to the group:</p><div class="row"><a class="btn wa" id="dshare" href="#" target="_blank" rel="noopener">Share on WhatsApp</a><button class="btn ghost" id="dcopy" type="button">Copy teams</button></div></div>`:'';return}
   el.innerHTML=draft.pairs.map((pr,i)=>`<div><span><b>${pr.length===3?'Three':'Pair'} ${i+1}</b> &nbsp;${pr.map(x=>esc(x.n)).join(' &amp; ')}</span><span class="note" style="margin:0">${pr.map(x=>esc(fmtH(x.h))).join(' · ')}</span></div>`).join('')+
   (draft.pairs.some(pr=>pr.length===3)?`<p class="note">Odd number, so one team of three. They count the best 2 of 3 scores on holes 1–3, with adjusted Greensomes and Scramble handicaps.</p>`:'')+
   (draft.left?`<p class="note" style="color:#a01826">Odd number: <b>${esc(draft.left.n)}</b> is left over. Tick one more player, or add them to a pair yourself below.</p>`:'')+
@@ -675,7 +694,7 @@ $('v-score').addEventListener('click',e=>{const b=e.target.closest('button[data-
   const k=b.dataset.k,h=parseInt(k),par=+R.par[h-1]||4,cur=S[pid]?.[k];let v;
   if(+b.dataset.d>0)v=cur==null?par:cur===0?1:Math.min(cur+1,15);else v=cur==null?null:cur===0?null:cur===1?0:cur-1;
   if(v!==(cur??null))setScore(pid,k,v)});
-$('v-setup').addEventListener('input',e=>{const t=e.target;if(t.closest('.pinf'))return;
+$('v-setup').addEventListener('input',e=>{const t=e.target;if(t.closest('.pinf'))return;if(sharedIds&&t.closest('.pair')){sharedIds=null;showDraft()}
   if(t.id==='dsearch'){dq=t.value.trim().toLowerCase();document.querySelectorAll('#dlist .chk').forEach(l=>l.hidden=dq&&!l.dataset.q.includes(dq));return}
   if(t.dataset.dp!==undefined){t.checked?drawSel.add(t.dataset.dp):drawSel.delete(t.dataset.dp);ls.set('gs-draw2',[...drawSel]);$('dcount').textContent=drawSel.size;return}
   if(t.id==='dbal'){dbal=t.checked;return}
@@ -683,17 +702,21 @@ $('v-setup').addEventListener('input',e=>{const t=e.target;if(t.closest('.pinf')
   const f=t.dataset.f;if(f==='p1'||f==='p2'||f==='p3'){const m=findP(t.value);if(m){const h=t.closest('.pair').querySelector(`[data-f=h${f[1]}]`);if(h){h.value=fmtH(m.h);h.classList.add('filled');setTimeout(()=>h.classList.remove('filled'),900)}}}});
 $('v-setup').addEventListener('change',e=>{const t=e.target,f=t.dataset.f;if(f==='p1'||f==='p2'||f==='p3'){const m=findP(t.value);if(m)t.value=m.n}});
 $('v-setup').addEventListener('click',async e=>{const t=e.target.closest('button')||e.target;
-  if(t.id==='addp'){$('pairs').insertAdjacentHTML('beforeend',pairRow({id:newId()}));setupDirty=true}
+  if(['dshare','dcopy','pshare','pcopy'].includes(t.id)){
+    if(!savedTeams().length){e.preventDefault();toast('No pairs yet. Draw or add them first.');return}
+    if(setupDirty){e.preventDefault();toast('Tap Save setup (below the course card) first, then share.',3500);return}
+    const txt=teamsMsg(savedTeams());if(t.tagName==='A')t.href=waUrl(txt);else copyTeams(txt);return}   // the link opens after this handler, with the new href
+  if(t.id==='addp'){$('pairs').insertAdjacentHTML('beforeend',pairRow({id:newId()}));setupDirty=true;if(sharedIds){sharedIds=null;showDraft()}}
   else if(t.matches('[data-add3]')){t.insertAdjacentHTML('afterend',p3Inputs({}));t.remove();setupDirty=true}
-  else if(t.matches('[data-rm]')){t.closest('.pair').remove();setupDirty=true}
+  else if(t.matches('[data-rm]')){t.closest('.pair').remove();setupDirty=true;if(sharedIds){sharedIds=null;showDraft()}}
   else if(t.id==='dall'||t.id==='dnone'){document.querySelectorAll('#dlist .chk:not([hidden]) input').forEach(i=>{i.checked=t.id==='dall';i.checked?drawSel.add(i.dataset.dp):drawSel.delete(i.dataset.dp)});ls.set('gs-draw2',[...drawSel]);$('dcount').textContent=drawSel.size}
-  else if(t.id==='ddraw'||t.id==='dagain'){if(drawSel.size<2){toast('Tick at least 2 players');return}draft=drawPairs($('dbal').checked);useArmed=0;showDraft()}
-  else if(t.id==='duse'){if(!draft)return;
+  else if(t.id==='ddraw'||t.id==='dagain'){if(drawSel.size<2){toast('Tick at least 2 players');return}draft=drawPairs($('dbal').checked);sharedIds=null;shareNext=false;useArmed=0;showDraft()}
+  else if(t.id==='duse'){if(!draft)return;if($('save').disabled){toast('Still saving the last change. Try again in a moment.');return}
     const scored=R.pairs.some(p=>Object.values(S[p.id]||{}).some(v=>v!=null));
     if(scored&&Date.now()-useArmed>5000){useArmed=Date.now();t.classList.add('armed');t.textContent='Scores exist! Tap again';toast('This round already has scores. Archive it first (bottom of Setup), or tap again to replace the pairs. Old scores stop counting.',5000);return}
-    const all=draft.pairs.flat();
+    const all=draft.pairs.flat();shareNext=true;sharedIds=null;
     $('pairs').innerHTML=draft.pairs.map(([a,b,c])=>pairRow({id:newId(),p1:drawName(a,all),h1:a.h,p2:drawName(b,all),h2:b.h,...(c?{p3:drawName(c,all),h3:c.h}:{})})).join('');draft=null;useArmed=0;showDraft();setupDirty=true;
-    $('save').click();if(scored)toast('Pairs replaced. Clear the old scores below when you start the new round.',4500);$('pairs').scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'})}
+    $('save').click();if(scored)toast('Pairs replaced. Clear the old scores below when you start the new round.',4500)}
   else if(t.id==='addpl'){$('players').insertAdjacentHTML('beforeend',playerRow({}));setupDirty=true}
   else if(t.matches('[data-prm]')){t.closest('.prow').remove();setupDirty=true}
   else if(t.id==='savep'){const list=[...document.querySelectorAll('.prow')].map(r=>({n:r.querySelector('[data-pn]').value.trim(),l:r.querySelector('[data-pl]').value.trim(),h:parseH(r.querySelector('[data-ph]').value)})).filter(p=>p.n);
@@ -702,9 +725,10 @@ $('v-setup').addEventListener('click',async e=>{const t=e.target.closest('button
   else if(t.id==='save'){const pairs=[...document.querySelectorAll('.pair')].map(r=>{const o={id:r.dataset.id};
       r.querySelectorAll('[data-f]').forEach(i=>{const f=i.dataset.f,v=i.value.trim();if((f==='p3'||f==='h3')&&!r.querySelector('[data-f=p3]').value.trim())return;o[f]=f[0]==='h'?parseH(v):v});return o});
     const par=[...document.querySelectorAll('[data-par]')].map(i=>Math.min(7,Math.max(3,parseInt(i.value)||4))),si=[...document.querySelectorAll('[data-si]')].map(i=>parseInt(i.value)||0);
-    if(new Set(si).size!==9||si.some(v=>v<1||v>18)){toast('Each hole needs its own SI (1–18). Check the course card.');return}
-    try{t.disabled=true;await saveRound({title:$('t-title').value.trim(),course:$('t-course').value.trim(),par,si,pairs});setupDirty=false;toast('Setup saved')}
-    catch(err){toast('Not saved: '+(err.code||err.message))}finally{t.disabled=false}}
+    if(new Set(si).size!==9||si.some(v=>v<1||v>18)){shareNext=false;toast('Each hole needs its own SI (1–18). Check the course card.');return}
+    try{t.disabled=true;await saveRound({title:$('t-title').value.trim(),course:$('t-course').value.trim(),par,si,pairs});setupDirty=false;toast('Setup saved');
+      if(shareNext){shareNext=false;sharedIds=pairs.map(p=>p.id).join();showDraft();const d=$('dres');if(d)d.scrollIntoView({behavior:reduce?'auto':'smooth',block:'center'})}}
+    catch(err){shareNext=false;toast('Not saved: '+(err.code||err.message))}finally{t.disabled=false}}
   else if(t.id==='arch'){if(!t.classList.contains('armed')){t.classList.add('armed');t.textContent='Tap again to archive';setTimeout(()=>{t.classList.remove('armed');t.textContent='🗂 Archive this round'},4000);return}
     t.classList.remove('armed');t.textContent='🗂 Archive this round';
     try{t.disabled=true;await archiveRound();toast('Round archived to Past rounds. Clear the scores when you are ready for the next one.',4000)}catch(err){toast('Not archived: '+(err.code||err.message)+(String(err.code).includes('permission')?' (Firestore rules need updating)':''),5000)}finally{t.disabled=false}}
