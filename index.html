@@ -220,6 +220,13 @@ a.btn.copy{display:flex;align-items:center;justify-content:center;text-decoratio
 .wlr b{display:block;margin-bottom:4px}
 .wlr .opts{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.wlr .opts .btn{min-height:44px;padding:6px 12px;font-size:14px}
 .wl textarea:disabled{background:#e6ebe8;opacity:.7}
+.wlsug{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.wlsug .btn{min-height:44px;padding:6px 12px;font-size:14px;background:#fff;color:var(--g);border:1px solid #b7e2c8}
+.wlsug .btn small{font-weight:400;color:var(--mut);margin-left:4px}
+.wlor{font-size:13px;margin-top:10px;opacity:.85}
+.aka{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px;color:var(--mut);margin:-2px 0 4px}
+.aka span{background:var(--g3);color:var(--g);border-radius:99px;padding:2px 4px 2px 10px;display:inline-flex;align-items:center;gap:2px}
+.aka button{border:0;background:none;color:var(--g);font-size:16px;min-width:32px;min-height:32px;cursor:pointer}
 .wlnew{display:grid;grid-template-columns:minmax(0,1fr) 78px auto;gap:6px;margin-top:8px;align-items:center}
 .wlnew input{min-height:44px}.wlnew .btn{min-height:44px;padding:6px 14px}
 .chk small{font-weight:400;color:var(--mut);font-size:12px;display:block}
@@ -712,7 +719,8 @@ addEventListener('resize',()=>{if(sugFor)sugDraw()});
 if(window.visualViewport){visualViewport.addEventListener('resize',()=>{if(sugFor)sugDraw()});visualViewport.addEventListener('scroll',()=>{if(sugFor)sugDraw()})}
 const findP=v=>{v=String(v||'').trim().toLowerCase().replace(/\s+/g,' ');return v&&(P.find(p=>pkey(p).toLowerCase()===v)||P.find(p=>sugName(p).toLowerCase()===v)||P.find(p=>p.n.toLowerCase()===v))};
 const parseH=v=>{v=String(v??'').trim().replace(/\s/g,'');if(v==='')return 0;const n=parseFloat(v.replace(/^\+/,'-').replace(/^[−–]/,'-').replace(',','.'));return isFinite(n)?n:0};
-const playerRow=p=>`<div class="prow"><input data-pn value="${esc(p.n||'')}" placeholder="First name" aria-label="First name"><input data-pl value="${esc(p.l||'')}" placeholder="Surname" aria-label="Surname"><input data-ph inputmode="decimal" value="${esc(fmtH(p.h))}" placeholder="H'cap" aria-label="Handicap"><button class="x" type="button" data-prm aria-label="Remove player">×</button></div>`;
+const playerRow=p=>`<div class="prow"><input data-pn value="${esc(p.n||'')}" placeholder="First name" aria-label="First name"><input data-pl value="${esc(p.l||'')}" placeholder="Surname" aria-label="Surname"><input data-ph inputmode="decimal" value="${esc(fmtH(p.h))}" placeholder="H'cap" aria-label="Handicap"><button class="x" type="button" data-prm aria-label="Remove player">×</button>${akaHtml(p.a)}</div>`;
+const akaHtml=a=>(a&&a.length)?`<div class="aka" data-pa="${esc(JSON.stringify(a))}">Also known as ${a.map(x=>`<span>${esc(x)}<button type="button" data-akarm="${esc(x)}" aria-label="Forget the name ${esc(x)}">×</button></span>`).join('')}</div>`:'';
 const dlistHtml=()=>[...P].sort((a,b)=>a.n.localeCompare(b.n)).map(p=>{const k=pkey(p),q=k.toLowerCase();return `<label class="chk" data-q="${esc(q)}" ${dq&&!q.includes(dq)?'hidden':''}><input type="checkbox" data-dp="${esc(k)}" ${drawSel.has(k)?'checked':''}><span>${esc(p.n)}<small>${esc(p.l)} · ${esc(fmtH(p.h))}</small></span></label>`}).join('');
 // ---------- paste the WhatsApp "who's playing" list ----------
 // The group posts e.g. "Friday golf 7:30 tee\n1. Bradley\n2. Tim F\n3. Sheldon (18)\n4." Only numbered lines count. When the paste holds
@@ -760,6 +768,7 @@ function matchName(name){
   const split=p=>{const pn=fold(p.n),k=pn.split(' ').length;return {pn,pl:fold(p.l),gn:w.slice(0,k).join(' '),gl:w.slice(k).join(' ')}};   // the typed name cut like this player's
   const lStarts=(pl,gl)=>!!pl&&(pl.startsWith(gl)||pl.split(' ').some(x=>x.startsWith(gl)));
   let a=P.filter(p=>fold(pkey(p))===f);if(a.length)return sure(a);
+  a=P.filter(p=>(p.a||[]).some(x=>fold(x)===f));if(a.length)return sure(a);                         // a nickname remembered from an earlier list ("Fee")
   a=P.filter(p=>fold(sugName(p))===f);if(a.length)return sure(a);
   a=P.filter(p=>fold(p.n)===f);if(a.length)return sure(a);                                         // "Bradley"
   a=P.filter(p=>{const x=split(p);return x.gn===x.pn&&x.gl&&lStarts(x.pl,x.gl)});if(a.length)return sure(a);   // "Tim F", "Chris Mac"
@@ -785,16 +794,35 @@ function wlRun(){const list=parseWaList(wl.text);
   wl.res={total:list.length,ticked,maybe,amb,unk};wlDraw();wlSyncTicks();
   setTimeout(()=>$('wlres')?.scrollIntoView({block:'nearest',behavior:reduce?'auto':'smooth'}),50);
   const chk=maybe.length+amb.length,u=unk.length;
-  toast(`Ticked ${ticked.length} player${ticked.length===1?'':'s'}${chk?`, ${chk} to check`:''}${u?`, ${u} ${u===1?'needs':'need'} a handicap`:''}.${chk||u?' See just under the pasted list.':''}`,chk||u?5000:3000)}
+  toast(`Ticked ${ticked.length} player${ticked.length===1?'':'s'}${chk?`, ${chk} to check`:''}${u?`, ${u} not on the players list`:''}.${chk||u?' See just under the pasted list.':''}`,chk||u?5000:3000)}
 function wlHtml(){const r=wl.res;if(!r)return '';let h='';const left=[r.maybe.length+r.amb.length?(r.maybe.length+r.amb.length)+' to check':'',r.unk.length?r.unk.length+' to add':''].filter(Boolean);
   h+=`<div class="wlr ok"><b>✓ ${r.ticked.length} ticked</b>${r.total} name${r.total===1?'':'s'} in the list${left.length?': '+left.join(', '):''}. Anyone not on it was unticked.</div>`;
   r.maybe.forEach((m,i)=>{h+=`<div class="wlr chk2"><b>Is “${esc(m.name)}” ${esc(m.key)}?</b><div class="opts"><button class="btn" type="button" data-wlyes="${i}">Yes, tick</button><button class="btn ghost" type="button" data-wlno="${i}">No, someone new</button></div></div>`});
   r.amb.forEach((a,i)=>{h+=`<div class="wlr chk2"><b>Which “${esc(a.name)}”?</b><div class="opts">${a.keys.map(k=>`<button class="btn ghost" type="button" data-wlpick="${i}" data-k="${esc(k)}">${esc(k)}</button>`).join('')}<button class="btn ghost" type="button" data-wlnone="${i}">Someone else</button></div></div>`});
   r.unk.forEach((u,i)=>{const nm=u.typed??(u.n+' '+u.l).trim();
-    h+=`<div class="wlr need"><b>${u.guest?`${esc(u.guest)}’s guest needs a name and a handicap`:`“${esc(u.name)}” isn’t on the players list and needs a handicap`}</b>${u.guest?'Type the guest’s name and handicap, then tap Add.':'If they are on it under another name, type that name. Otherwise add their handicap, then tap Add.'}
-    <div class="wlnew"><input data-wln="${i}" value="${esc(nm)}" placeholder="${u.guest?'Guest’s name':'Name'}" aria-label="Name" autocapitalize="words"><input data-wlh="${i}" inputmode="decimal" placeholder="H'cap" value="${esc(u.h??'')}" aria-label="Handicap"><button class="btn" type="button" data-wladd="${i}">Add</button></div></div>`});
+    h+=`<div class="wlr need" data-wlu="${i}"><b>${u.guest?`${esc(u.guest)}’s guest needs a name and a handicap`:`“${esc(u.name)}” isn’t on the players list`}</b>${u.guest?'Already on the players list? Type their name and tap them. Otherwise type the guest’s name and handicap, then tap Add.':'Known by another name? Type it below and tap them. New player? They need a handicap: add it and tap Add.'}
+    <div class="wlnew"><input data-wln="${i}" value="${esc(nm)}" placeholder="${u.guest?'Guest’s name':'Name'}" aria-label="Name" autocapitalize="words" autocomplete="off"><input data-wlh="${i}" inputmode="decimal" placeholder="H'cap" value="${esc(u.h??'')}" aria-label="Handicap"><button class="btn" type="button" data-wladd="${i}">Add</button></div>
+    <div class="wlsug" data-wls="${i}">${wlSugHtml(i,u.guest?u.typed||'':nm)}</div></div>`});
   return h}
 function wlDraw(){const e=$('wlres');if(e)e.innerHTML=wlHtml()}
+// players on the list that fit what's typed in a "not on the list" box: tap one to tick them
+function wlCands(q){const f=fold(q);if(!f)return [];const m=matchName(q),first=m?(m.p?[m.p]:m.maybe?[m.maybe]:m.amb||[]):[];
+  const more=P.filter(p=>{const k=fold(pkey(p)),al=(p.a||[]).map(fold);return k.includes(f)||k.split(' ').some(x=>x.startsWith(f))||al.some(x=>x.startsWith(f))||(f.length>=3&&fold(p.n).startsWith(f.slice(0,2))&&lev(f,fold(p.n))<=2)});
+  return [...new Set([...first,...more])].slice(0,6)}
+function wlSugHtml(i,q){const c=wlCands(q);return c.length?c.map(p=>`<button class="btn" type="button" data-wlas="${i}" data-k="${esc(pkey(p))}">✓ ${esc(pkey(p))}<small>${esc(fmtH(p.h))}</small></button>`).join(''):''}
+// remember that this list name means this player, so the next pasted list ticks them straight away
+async function wlRemember(name,p){const nm=String(name||'').replace(/\s+/g,' ').trim();
+  if(!nm||[pkey(p),p.n,sugName(p),...(p.a||[])].some(x=>fold(x)===fold(nm))||/’s guest$/.test(nm))return false;
+  if(lockOther()||lockLost())return false;
+  const list=P.map(x=>x===p?{...x,a:[...(x.a||[]),nm]}:x);
+  try{await savePlayers(list);P=list;const pl=$('players');                                         // show it in the Players panel too
+    if(pl){const row=[...pl.querySelectorAll('.prow')].find(x=>fold(x.querySelector('[data-pn]').value+' '+x.querySelector('[data-pl]').value)===fold(pkey(p)));
+      if(row){const old=row.querySelector('.aka');const now=P.find(x=>pkey(x)===pkey(p));if(old)old.remove();row.insertAdjacentHTML('beforeend',akaHtml(now.a))}}
+    return true}catch{return false}}
+async function wlAs(i,k){const r=wl.res,u=r&&r.unk[+i],p=P.find(x=>pkey(x)===k);if(!u||!p)return;
+  wlTick(k);r.unk.splice(+i,1);wlDraw();wlSyncTicks();
+  const kept=!u.guest&&await wlRemember(u.name,p);
+  toast(kept?`${k} ticked. “${u.name}” will be recognised as ${p.n} next time.`:`${k} ticked.`,4000)}
 function wlSyncTicks(){const d=$('dlist');if(d)d.innerHTML=dlistHtml();const c=$('dcount');if(c)c.textContent=drawSel.size}
 function wlTick(k){drawSel.add(k);ls.set('gs-draw2',[...drawSel]);if(!wl.res.ticked.includes(k))wl.res.ticked.push(k)}
 async function wlAdd(i,btn){const r=wl.res,u=r&&r.unk[+i];if(!u)return;
@@ -809,7 +837,8 @@ async function wlAdd(i,btn){const r=wl.res,u=r&&r.unk[+i];if(!u)return;
     const pl=$('players');if(pl&&![...pl.querySelectorAll('.prow')].some(x=>fold(x.querySelector('[data-pn]').value+' '+x.querySelector('[data-pl]').value)===fold(pkey(np))))pl.insertAdjacentHTML('beforeend',playerRow(np));
     const sm=pl&&pl.closest('details')?.querySelector('summary');if(sm)sm.innerHTML=`Players &amp; handicaps (${P.length})`}
   const k=pkey(have||np);wlTick(k);r.unk.splice(+i,1);
-  wlDraw();wlSyncTicks();toast(have?`${k} is on the players list, now ticked.`:`${k} added to the players list (${fmtH(np.h)}) and ticked.`,3500)}
+  wlDraw();wlSyncTicks();const kept=have&&!u.guest&&await wlRemember(u.name,have);
+  toast(have?(kept?`${k} ticked. “${u.name}” will be recognised as ${have.n} next time.`:`${k} is on the players list, now ticked.`):`${k} added to the players list (${fmtH(np.h)}) and ticked.`,4000)}
 function rnd(n){const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]%n}
 function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
 function drawPairs(bal){let pl=shuffle(P.filter(p=>drawSel.has(pkey(p))));let left=null;
@@ -980,7 +1009,7 @@ $('v-score').addEventListener('click',e=>{const b=e.target.closest('button[data-
   if(+b.dataset.d>0)v=cur==null?par:cur===0?1:Math.min(cur+1,15);else v=cur==null?par-1:cur===0?null:cur===1?0:cur-1;   // empty: − starts at a birdie
   if(v!==(cur??null))setScore(pid,k,v)});
 $('v-setup').addEventListener('input',e=>{const t=e.target;if(t.closest('.pinf')||t.id==='orgname')return;
-  if(t.closest('#wl')){if(t.id==='wltext')wl.text=t.value;const u=wl.res&&wl.res.unk[+(t.dataset.wln??t.dataset.wlh)];if(u){if(t.dataset.wln!=null)u.typed=t.value;else u.h=t.value}return}   /* the pasted list is a helper, not an unsaved Setup change */
+  if(t.closest('#wl')){if(t.id==='wltext')wl.text=t.value;const u=wl.res&&wl.res.unk[+(t.dataset.wln??t.dataset.wlh)];if(u){if(t.dataset.wln!=null){u.typed=t.value;const sg=document.querySelector(`[data-wls="${t.dataset.wln}"]`);if(sg)sg.innerHTML=wlSugHtml(t.dataset.wln,t.value)}else u.h=t.value}return}   /* the pasted list is a helper, not an unsaved Setup change */
  if(sharedIds&&t.closest('.pair')){sharedIds=null;showDraft()}
   if(t.id==='dsearch'){dq=t.value.trim().toLowerCase();document.querySelectorAll('#dlist .chk').forEach(l=>l.hidden=dq&&!l.dataset.q.includes(dq));return}
   if(t.dataset.dp!==undefined){t.checked?drawSel.add(t.dataset.dp):drawSel.delete(t.dataset.dp);ls.set('gs-draw2',[...drawSel]);$('dcount').textContent=drawSel.size;return}
@@ -1005,7 +1034,9 @@ $('v-setup').addEventListener('click',async e=>{const t=e.target.closest('button
   if(t.id==='wlpaste'){try{const v=await navigator.clipboard.readText();if(!v||!v.trim())throw 0;const ta=$('wltext');ta.value=wl.text=v;wlRun()}
     catch{toast('Long-press the box and tap Paste.',3000);$('wltext')?.focus()}return}
   if(t.matches('[data-wlpick]')){const r=wl.res,a=r&&r.amb[+t.dataset.wlpick];if(!a)return;wlTick(t.dataset.k);r.amb.splice(+t.dataset.wlpick,1);wlDraw();wlSyncTicks();toast(`${t.dataset.k} ticked`);return}
-  if(t.matches('[data-wlyes]')){const r=wl.res,m=r&&r.maybe[+t.dataset.wlyes];if(!m)return;wlTick(m.key);r.maybe.splice(+t.dataset.wlyes,1);wlDraw();wlSyncTicks();toast(`${m.key} ticked`);return}
+  if(t.matches('[data-wlyes]')){const r=wl.res,m=r&&r.maybe[+t.dataset.wlyes];if(!m)return;wlTick(m.key);r.maybe.splice(+t.dataset.wlyes,1);wlDraw();wlSyncTicks();
+    const p=P.find(x=>pkey(x)===m.key),kept=p&&await wlRemember(m.name,p);toast(kept?`${m.key} ticked. “${m.name}” will be recognised next time.`:`${m.key} ticked`,3500);return}
+  if(t.matches('[data-wlas]')){await wlAs(t.dataset.wlas,t.dataset.k);return}
   if(t.matches('[data-wlno],[data-wlnone]')){const r=wl.res,no=t.matches('[data-wlno]'),arr=no?r.maybe:r.amb,ix=+(no?t.dataset.wlno:t.dataset.wlnone),m=arr&&arr[ix];if(!m)return;
     arr.splice(ix,1);const ws=m.name.split(' ');r.unk.push({name:m.name,n:ws[0],l:ws.slice(1).join(' '),h:m.h});wlDraw();toast(`${m.name} isn’t on the players list, so add their handicap.`,3500);return}
   if(t.matches('[data-wladd]')){await wlAdd(t.dataset.wladd,t);return}
@@ -1022,7 +1053,8 @@ $('v-setup').addEventListener('click',async e=>{const t=e.target.closest('button
     $('save').click();if(scored)toast('Pairs replaced. Clear the old scores below when you start the new round.',4500)}
   else if(t.id==='addpl'){$('players').insertAdjacentHTML('beforeend',playerRow({}));setupDirty=true}
   else if(t.matches('[data-prm]')){t.closest('.prow').remove();setupDirty=true}
-  else if(t.id==='savep'){if(!setupWriteOk())return;const list=[...document.querySelectorAll('.prow')].map(r=>({n:r.querySelector('[data-pn]').value.trim(),l:r.querySelector('[data-pl]').value.trim(),h:parseH(r.querySelector('[data-ph]').value)})).filter(p=>p.n);
+  else if(t.matches('[data-akarm]')){const box=t.closest('.aka'),a=JSON.parse(box.dataset.pa||'[]').filter(x=>x!==t.dataset.akarm);box.outerHTML=akaHtml(a)||'<div class="aka" data-pa="[]" hidden></div>';setupDirty=true;toast('Tap Save players to forget that name.',3000)}
+  else if(t.id==='savep'){if(!setupWriteOk())return;const list=[...document.querySelectorAll('.prow')].map(r=>{const o={n:r.querySelector('[data-pn]').value.trim(),l:r.querySelector('[data-pl]').value.trim(),h:parseH(r.querySelector('[data-ph]').value)},ak=r.querySelector('[data-pa]'),a=ak?JSON.parse(ak.dataset.pa||'[]'):[];if(a.length)o.a=a;return o}).filter(p=>p.n);
     const seen=new Set(),dup=list.find(p=>{const k=pkey(p).toLowerCase();if(seen.has(k))return true;seen.add(k)});if(dup){toast(`${pkey(dup)} is on the list twice`);return}
     try{t.disabled=true;await savePlayers(list);P=list;setupDirty=false;toast('Players saved')}catch(err){toast('Not saved: '+(err.code||err.message))}finally{t.disabled=false}}
   else if(t.id==='save'){if(!setupWriteOk())return;const pairs=[...document.querySelectorAll('.pair')].map(r=>{const o={id:r.dataset.id};
