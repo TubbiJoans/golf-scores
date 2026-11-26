@@ -65,6 +65,12 @@ main>section.show{animation:vin .22s ease-out}
 .tick li span{color:var(--mut);font-size:12px;white-space:nowrap}
 .tick .b,.tick li.b{color:#9a3412}
 .tick .b::before,.tick li.b b::before{content:"🐦 "}
+.tick .e,.tick li.e{color:#a16207}
+.tick .e::before,.tick li.e b::before{content:"🦅 "}
+.tick .a,.tick li.a{color:#7c3aed}
+.tick .a::before,.tick li.a b::before{content:"⛳ "}
+.tick .al,.tick li.al{color:#0369a1}
+.tick .al::before,.tick li.al b::before{content:"🕊️ "}
 /* winner */
 .win{display:flex;gap:12px;align-items:center;background:linear-gradient(135deg,#0e3b2c,#1f5c44);color:#fff;border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 6px 20px rgba(14,59,44,.25)}
 .win .tro{font-size:40px;line-height:1}
@@ -76,6 +82,12 @@ main>section.show{animation:vin .22s ease-out}
 .lb li{background:var(--card);border-radius:14px;box-shadow:0 1px 0 var(--line),0 2px 10px rgba(14,59,44,.06);overflow:hidden;position:relative}
 .lb li.hot{animation:glow 1.1s ease-in-out 4}
 @keyframes glow{50%{box-shadow:0 0 0 3px var(--gold),0 6px 22px rgba(244,183,64,.45)}}
+.lb li.hot2{animation:glow2 .8s ease-in-out 10}
+@keyframes glow2{0%,100%{box-shadow:0 0 0 2px var(--gold)}50%{box-shadow:0 0 0 5px var(--gold),0 0 34px 6px rgba(244,183,64,.75);transform:scale(1.02)}}
+.lb li.hot3{animation:glow3 .9s linear 16;z-index:1}
+.lb li.hot4{animation:glow4 1s ease-in-out 16;z-index:1}
+@keyframes glow4{0%,100%{box-shadow:0 0 0 4px #0ea5e9,0 0 30px #0ea5e9}33%{box-shadow:0 0 0 4px #14b8a6,0 0 34px #22d3ee}66%{box-shadow:0 0 0 4px #f4b740,0 0 30px #38bdf8;transform:scale(1.02)}}
+@keyframes glow3{0%{box-shadow:0 0 0 4px #ff3b3b,0 0 30px #ff3b3b}20%{box-shadow:0 0 0 4px #ffb000,0 0 30px #ffb000}40%{box-shadow:0 0 0 4px #22c55e,0 0 30px #22c55e}60%{box-shadow:0 0 0 4px #3b82f6,0 0 30px #3b82f6}80%{box-shadow:0 0 0 4px #a855f7,0 0 30px #a855f7}100%{box-shadow:0 0 0 4px #ff3b3b,0 0 30px #ff3b3b}}
 .lb summary{list-style:none;display:grid;grid-template-columns:44px minmax(0,1fr) auto 58px;gap:10px;align-items:center;padding:12px 14px;cursor:pointer;min-height:64px}
 .lb summary::-webkit-details-marker{display:none}
 .pos{font:700 30px/1 "Barlow Condensed",system-ui,sans-serif;color:var(--g);text-align:center;position:relative}
@@ -86,6 +98,10 @@ main>section.show{animation:vin .22s ease-out}
 .who b{display:block;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .who small{color:var(--mut);font-size:13px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .who .bb{color:#9a3412;font-weight:700}
+.who .bb.e2{background:linear-gradient(90deg,#a16207,#f4b740,#a16207);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 1.6s linear infinite}
+.who .bb.e3{background:linear-gradient(90deg,#ef4444,#f59e0b,#22c55e,#3b82f6,#a855f7,#ef4444);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 1.2s linear infinite;font-weight:800}
+.who .bb.e4{background:linear-gradient(90deg,#1e40af,#0ea5e9,#22d3ee,#f4b740,#1e40af);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 1.4s linear infinite;font-weight:800}
+@keyframes shine{to{background-position:-200% 0}}
 .thru{font-size:13px;color:var(--mut);white-space:nowrap;text-align:right}
 .thru b{display:block;color:var(--ink);font-weight:700}
 .pts{font:700 36px/1 "Barlow Condensed",system-ui,sans-serif;text-align:right}
@@ -102,6 +118,9 @@ table.sc{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 12px}
 .sc th:first-child,.sc td:first-child{text-align:left;padding-left:14px;color:var(--mut);font-weight:500}
 .sc .tot{font-weight:700}
 .sc td.bd span{display:inline-block;min-width:24px;height:24px;line-height:20px;border:2px solid var(--red);border-radius:50%;color:var(--red);font-weight:700}
+.sc td.eg span{border-color:var(--gold);color:#a16207;box-shadow:0 0 0 2px #fff,0 0 0 4px var(--gold)}
+.sc td.alb span{background:linear-gradient(135deg,#22d3ee,#0ea5e9 50%,#1e40af);border-color:transparent;color:#fff;box-shadow:0 0 0 2px #fff,0 0 0 4px #0ea5e9}
+.sc td.ace span{background:linear-gradient(135deg,#f4b740,#ef4444 50%,#a855f7);border-color:transparent;color:#fff;box-shadow:0 0 0 2px #fff,0 0 0 4px #a855f7}
 .dot0{box-shadow:inset 0 -3px 0 var(--f0)}.dot1{box-shadow:inset 0 -3px 0 var(--f1)}.dot2{box-shadow:inset 0 -3px 0 var(--f2)}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--mut);margin:12px 2px 0}
 .legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px;background:var(--c)}
@@ -134,6 +153,9 @@ input:focus,select:focus,button:focus-visible{outline:3px solid #9ad3b4;outline-
 .step button:active{transform:scale(.88);background:#cfe5d9}
 .step output{width:40px;text-align:center;font:700 30px/1 "Barlow Condensed",system-ui,sans-serif}
 .step output.bird{color:var(--red)}
+.step output.eagle{color:#d18b00;text-shadow:0 0 10px rgba(244,183,64,.7)}
+.step output.alb{background:linear-gradient(90deg,#1e40af,#0ea5e9,#22d3ee);-webkit-background-clip:text;background-clip:text;color:transparent}
+.step output.ace{background:linear-gradient(90deg,#ef4444,#f59e0b,#22c55e,#3b82f6,#a855f7);-webkit-background-clip:text;background-clip:text;color:transparent}
 .pop{animation:pop .32s ease-out}
 @keyframes pop{40%{transform:scale(1.28)}}
 .pt{text-align:center;border-radius:10px;padding:4px 0;background:var(--g3)}
@@ -186,7 +208,47 @@ h2.sec{font:700 22px "Barlow Condensed",system-ui,sans-serif;margin:0 0 8px}
 #modal[hidden]{display:none}
 #modal .box{background:#fff;border-radius:16px;padding:14px;max-width:420px;width:100%;max-height:90vh;overflow:auto;text-align:center}
 #modal img{width:100%;border-radius:10px;display:block;margin-bottom:10px}
-#confetti{position:fixed;inset:0;pointer-events:none;z-index:70}
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:78}
+/* eagle banner */
+#eagle{position:fixed;left:50%;top:28%;z-index:76;transform:translate(-50%,-50%);width:min(340px,88vw);text-align:center;padding:18px 18px 16px;border-radius:22px;
+  background:radial-gradient(circle at 50% 0,#fff3c4,#f4b740 55%,#c98a00);color:#3d2800;box-shadow:0 0 0 4px #fff,0 0 0 8px var(--gold),0 18px 60px rgba(0,0,0,.35);pointer-events:none;animation:eaglein .6s cubic-bezier(.2,1.6,.4,1) both}
+#eagle.out{animation:eagleout .45s ease-in forwards}
+#eagle .ic{font-size:54px;line-height:1;display:block;animation:flap .5s ease-in-out infinite alternate}
+#eagle b{display:block;font:800 52px/1 "Barlow Condensed",system-ui,sans-serif;letter-spacing:.02em;text-shadow:0 2px 0 #fff8}
+#eagle small{display:block;font-size:15px;font-weight:600;margin-top:6px}
+@keyframes eaglein{from{opacity:0;transform:translate(-50%,-50%) scale(.3) rotate(-8deg)}to{opacity:1;transform:translate(-50%,-50%)}}
+@keyframes eagleout{to{opacity:0;transform:translate(-50%,-90%) scale(.8)}}
+@keyframes flap{from{transform:translateY(0) rotate(-8deg)}to{transform:translateY(-8px) rotate(8deg)}}
+/* hole in one: the whole app goes wild */
+#ace{position:fixed;inset:0;z-index:77;display:flex;align-items:center;justify-content:center;text-align:center;color:#fff;cursor:pointer;overflow:hidden;
+  background:conic-gradient(from 0deg,#ef4444,#f59e0b,#eab308,#22c55e,#06b6d4,#3b82f6,#a855f7,#ec4899,#ef4444);animation:acebg 2.2s linear infinite,acein .35s ease-out}
+#ace::before{content:"";position:absolute;inset:-50%;background:repeating-conic-gradient(rgba(255,255,255,.22) 0 10deg,transparent 10deg 20deg);animation:spin 6s linear infinite}
+#ace::after{content:"";position:absolute;inset:0;background:radial-gradient(circle,rgba(10,30,22,.15) 0,rgba(10,30,22,.65) 75%);animation:flash .5s ease-out}
+#ace .in{position:relative;z-index:1;padding:20px}
+#ace .ball{font-size:78px;line-height:1;display:block;animation:bounce .55s cubic-bezier(.3,0,.6,1) infinite alternate}
+#ace h1{margin:6px 0 0;font:900 clamp(72px,24vw,130px)/.86 "Barlow Condensed",system-ui,sans-serif;letter-spacing:.01em;text-transform:uppercase;
+  background:linear-gradient(180deg,#fff,#fff6c8 45%,#f4b740);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 4px 0 #0e3b2c) drop-shadow(0 0 22px rgba(255,255,255,.7));animation:acetext .9s cubic-bezier(.2,1.8,.4,1) both,wobble 1.1s ease-in-out .9s infinite}
+#ace p{margin:14px 0 4px;font:700 22px/1.2 Inter,system-ui,sans-serif;text-shadow:0 2px 8px rgba(0,0,0,.5)}
+#ace small{display:block;opacity:.85;font-size:13px;text-shadow:0 1px 4px rgba(0,0,0,.5)}
+#ace.out{animation:aceout .5s ease-in forwards}
+#ace.alb{background:conic-gradient(from 0deg,#1e40af,#0ea5e9,#22d3ee,#a5f3fc,#ffffff,#f4b740,#14b8a6,#0369a1,#1e40af);animation:spinbg 3s linear infinite,acein .35s ease-out}
+#ace.alb.out{animation:aceout .5s ease-in forwards}
+#ace.alb .ball{animation:glide 2.2s ease-in-out infinite;font-size:84px}
+@keyframes spinbg{50%{filter:brightness(1.15) saturate(1.3)}}
+@keyframes glide{0%,100%{transform:translate(-60px,6px) rotate(-10deg)}50%{transform:translate(60px,-18px) rotate(10deg)}}
+body.party.alb>header,body.party.alb>nav,body.party.alb>main{animation:sea 1.1s ease-in-out infinite,shake .18s linear infinite}
+@keyframes sea{50%{filter:hue-rotate(-40deg) saturate(1.7) brightness(1.1)}}
+@keyframes acebg{to{filter:hue-rotate(360deg)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes flash{from{background:#fff}}
+@keyframes acein{from{opacity:0;transform:scale(1.4)}}
+@keyframes aceout{to{opacity:0;transform:scale(.7)}}
+@keyframes acetext{from{opacity:0;transform:scale(3) rotate(-12deg)}to{opacity:1;transform:none}}
+@keyframes wobble{0%,100%{transform:rotate(-3deg) scale(1)}50%{transform:rotate(3deg) scale(1.08)}}
+@keyframes bounce{from{transform:translateY(-26px)}to{transform:translateY(8px) scaleY(.9)}}
+body.party>header,body.party>nav,body.party>main{animation:party .5s linear infinite,shake .18s linear infinite}
+@keyframes party{to{filter:hue-rotate(360deg) saturate(1.6)}}
+@keyframes shake{0%,100%{transform:translate(0,0)}25%{transform:translate(-4px,2px) rotate(-.6deg)}50%{transform:translate(3px,-3px)}75%{transform:translate(4px,3px) rotate(.6deg)}}
 #toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:99px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;z-index:80;text-align:center}
 #toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){*,*::before{animation:none!important;transition:none!important}}
@@ -263,17 +325,19 @@ function phs(p){const a=(+p.h1||0)/2,b=(+p.h2||0)/2,c=(+p.h3||0)/2;
   return{a:r1(.75*a),b:r1(.75*b),g:r1(.6*lo+.4*hi),s:r1(.35*lo+.15*hi)}}
 const pn=(p,k)=>({a:p.p1,b:p.p2,c:p.p3}[k])||({a:'Player 1',b:'Player 2',c:'Player 3'}[k]);
 const teamName=p=>p.name||[p.p1||'Player 1',p.p2||'Player 2',...(is3(p)?[p.p3]:[])].join(' & ');
+// 1 birdie, 2 eagle, 3 hole in one, 4 albatross (a hole in one on a par 4 counts as the hole in one)
+const lvOf=(g,par)=>g===null||g===undefined||g<=0?0:g===1?3:g<=par-3?4:g===par-2?2:g===par-1?1:0;
 function card(p,RR=R,SS=S){
   const P=phs(p),rk=ranks(RR.si||DEF.si),sc=(SS&&SS[p.id])||{},three=is3(p);let tot=0,thru=0,done6=0,last=0;const seg=[0,0,0],holes=[];
   for(let h=1;h<=9;h++){const i=h-1,par=+(RR.par||DEF.par)[i]||4,f=fmtOf(h);
     const rows=f===0?[['a',pn(p,'a'),P.a],['b',pn(p,'b'),P.b],...(three?[['c',pn(p,'c'),P.c]]:[])]:[['',f===1?'Greensomes ball':'Scramble ball',f===1?P.g:P.s]];
     const e=rows.map(([k,l,ph])=>{const key=h+k,g=sc[key],gross=(g===undefined||g===null||g==='')?null:+g,st=strokes(ph,rk[i]);
-      const pt=gross===null?null:gross===0?0:Math.max(0,par+2-(gross-st));return{key,label:l,ph,st,gross,pt,bird:gross!==null&&gross>0&&gross<=par-1}});
+      const pt=gross===null?null:gross===0?0:Math.max(0,par+2-(gross-st));return{key,label:l,ph,st,gross,pt,bird:gross!==null&&gross>0&&gross<=par-1,lv:lvOf(gross,par)}});
     const got=e.filter(x=>x.pt!==null),done=got.length===e.length;
     let counted=got;
     if(f===0&&three&&got.length===3){const low=[...got].sort((x,y)=>x.pt-y.pt||(y.gross||99)-(x.gross||99))[0];low.drop=true;counted=got.filter(x=>x!==low)}
     const hp=counted.reduce((a,x)=>a+x.pt,0);tot+=hp;seg[f]+=hp;if(got.length)last=h;
-    if(done){thru++;done6+=hp}holes.push({h,par,si:(RR.si||DEF.si)[i],f,e,done,hp:got.length?hp:null,birdie:counted.some(x=>x.bird)})}
+    if(done){thru++;done6+=hp}holes.push({h,par,si:(RR.si||DEF.si)[i],f,e,done,hp:got.length?hp:null,birdie:counted.some(x=>x.bird),lv:Math.max(0,...counted.map(x=>x.lv))})}
   let on=null;if(last){on=holes[last-1].done?null:last;if(!on){for(let k=0;k<9;k++){const hh=holes[(last+k)%9];if(!hh.done){on=hh.h;break}}}}
   const proj=thru>=3&&thru<9?Math.round(done6/thru*9):null;     // too jumpy before 3 holes
   return{P,tot,seg,thru,holes,three,on,proj,started:!!last,birdies:holes.reduce((a,h)=>a+h.e.filter(x=>x.bird&&!x.drop).length,0)}}
@@ -299,9 +363,39 @@ function noteChange(pid,key,g){
   const p=R.pairs.find(x=>x.id===pid);feed=feed.filter(e=>!(e.pid===pid&&e.key===key));
   if(!p||g==null){saveFeed();return}
   const h=parseInt(key),c=card(p),hole=c.holes[h-1],e=hole&&hole.e.find(x=>x.key===key);if(!e){saveFeed();return}
-  const who=/[abc]$/.test(key)?e.label+' ':'',b=e.bird;
-  feed.unshift({t:Date.now(),pid,key,b,txt:`${teamName(p)}: ${who}${resWord(+g,hole.par)} on ${h}, ${e.pt} pt${e.pt===1?'':'s'}`});
-  feed=feed.slice(0,12);saveFeed();tickNew=Date.now();if(b)hot[pid]=Date.now()}
+  const who=/[abc]$/.test(key)?e.label+' ':'',b=e.bird,lv=e.lv;
+  feed.unshift({t:Date.now(),pid,key,b,lv,txt:`${teamName(p)}: ${who}${resWord(+g,hole.par)} on ${h}, ${e.pt} pt${e.pt===1?'':'s'}`});
+  feed=feed.slice(0,12);saveFeed();tickNew=Date.now();if(lv)hot[pid]={t:Date.now(),lv};if(lv>=2)queueCheer(pid,key)}
+const lvOfFeed=e=>e.lv??(e.b?1:0);
+// eagles and holes in one get a celebration on every phone. Wait until the scorer stops tapping +/- so stepping
+// past an eagle on the way to the real score doesn't set it off, and never repeat one already shown here.
+// (A reload never replays one: only scores that change while the app is open count.)
+const cheerT={},cheered=new Set();
+function queueCheer(pid,key){clearTimeout(cheerT[pid+key]);cheerT[pid+key]=setTimeout(()=>{
+  const p=R.pairs.find(x=>x.id===pid);if(!p)return;const h=parseInt(key),hole=card(p).holes[h-1],e=hole&&hole.e.find(x=>x.key===key);
+  if(!e||e.lv<2)return;const id=sig()+'|'+pid+'|'+key+'|'+e.gross;if(cheered.has(id))return;cheered.add(id);
+  const who=teamName(p)+(/[abc]$/.test(key)?' · '+e.label:'');
+  if(e.lv>=3)holeInOne(who,h,hole.par,e.lv===4);else eagle(who,h,resWord(e.gross,hole.par),e.pt)},1100)}
+function vib(p){try{navigator.vibrate&&navigator.vibrate(p)}catch{}}
+function eagle(who,h,word,pt){
+  document.getElementById('eagle')?.remove();const d=document.createElement('div');d.id='eagle';d.setAttribute('role','status');
+  d.innerHTML=`<span class="ic">🦅</span><b>${esc(word.toUpperCase())}!</b><small>${esc(who)} on hole ${h} · ${pt} pts</small>`;document.body.appendChild(d);
+  vib([80,60,80,60,160]);const W=innerWidth,H=innerHeight;
+  sparks({x:W*.5,y:H*.28,n:140,cols:['#f4b740','#ffd86b','#fff','#c98a00','#1f7a4d'],pow:14,up:6});
+  setTimeout(()=>{sparks({x:W*.1,y:H*.75,n:80,cols:['#f4b740','#fff','#ffd86b'],pow:13,up:12,dx:5});sparks({x:W*.9,y:H*.75,n:80,cols:['#f4b740','#fff','#ffd86b'],pow:13,up:12,dx:-5})},450);
+  setTimeout(()=>{d.classList.add('out');setTimeout(()=>d.remove(),500)},3600)}
+// hole in one and albatross: the whole app goes wild (albatross in ocean blues with a gliding bird)
+function holeInOne(who,h,par,alb){
+  document.getElementById('ace')?.remove();const d=document.createElement('div');d.id='ace';if(alb)d.className='alb';d.setAttribute('role','alertdialog');d.setAttribute('aria-label',alb?'Albatross':'Hole in one');
+  d.innerHTML=alb?`<div class="in"><span class="ball">🕊️</span><h1>Alba-<br>tross!</h1><p>${esc(who)}<br>Hole ${h} · 3 under par</p><small>Tap to close</small></div>`
+    :`<div class="in"><span class="ball">⛳</span><h1>Hole<br>in one!</h1><p>${esc(who)}<br>Hole ${h} · par ${par}</p><small>Tap to close</small></div>`;document.body.appendChild(d);
+  document.body.classList.add('party');if(alb)document.body.classList.add('alb');vib([200,80,200,80,200,80,500,120,500]);
+  const W=innerWidth,H=innerHeight,rain=alb?['#0ea5e9','#38bdf8','#22d3ee','#14b8a6','#1e40af','#ffffff','#f4b740']:['#ef4444','#f59e0b','#eab308','#22c55e','#06b6d4','#3b82f6','#a855f7','#ec4899','#fff'];let n=0;
+  const boom=()=>{if(!d.isConnected||d.classList.contains('out'))return;sparks({x:W*(.15+Math.random()*.7),y:H*(.15+Math.random()*.45),n:110,cols:rain,pow:12+Math.random()*6,up:3,round:Math.random()<.5});if(++n<22)setTimeout(boom,280+Math.random()*260)};
+  sparks({x:W*.5,y:H*.4,n:320,cols:rain,pow:22,up:8});boom();
+  const iv=setInterval(()=>{if(!d.isConnected||d.classList.contains('out'))return clearInterval(iv);sparks({x:Math.random()*W,y:-20,n:30,cols:rain,pow:3,up:-4})},350);
+  const close=()=>{if(d.classList.contains('out'))return;d.classList.add('out');document.body.classList.remove('party','alb');clearInterval(iv);setTimeout(()=>d.remove(),500)};
+  d.addEventListener('click',close);setTimeout(close,9000)}
 
 // ---------- rendering ----------
 function render(kind){loadFeed();
@@ -323,36 +417,47 @@ function renderBoard(){
   const before={};el.querySelectorAll('.lb li').forEach(li=>before[li.dataset.id]=li.getBoundingClientRect().top);
   const open=new Set([...el.querySelectorAll('.lb details[open]')].map(d=>d.dataset.id));
   const tk=feed[0],fresh=tk&&tickNew&&now-tickNew<1500;
-  const ticker=`<details class="tick"${el.querySelector('.tick[open]')?' open':''}><summary><span class="dot"></span>${tk?`<span class="tx${fresh?' new':''} ${tk.b?'b':''}">${esc(tk.txt)}</span><span class="age">${ago(tk.t)}</span>`:`<span class="tx" style="font-weight:500;color:var(--mut)">Live updates appear here as scores come in</span>`}</summary>
-    ${feed.length>1?`<ul>${feed.slice(1,8).map(e=>`<li class="${e.b?'b':''}"><b style="font-weight:500">${esc(e.txt)}</b><span>${ago(e.t)}</span></li>`).join('')}</ul>`:''}</details>`;
+  const ticker=`<details class="tick"${el.querySelector('.tick[open]')?' open':''}><summary><span class="dot"></span>${tk?`<span class="tx${fresh?' new':''} ${['','b','e','a','al'][lvOfFeed(tk)]}">${esc(tk.txt)}</span><span class="age">${ago(tk.t)}</span>`:`<span class="tx" style="font-weight:500;color:var(--mut)">Live updates appear here as scores come in</span>`}</summary>
+    ${feed.length>1?`<ul>${feed.slice(1,8).map(e=>`<li class="${['','b','e','a','al'][lvOfFeed(e)]}"><b style="font-weight:500">${esc(e.txt)}</b><span>${ago(e.t)}</span></li>`).join('')}</ul>`:''}</details>`;
   const w=rows[0];
   const win=fin?`<div class="win"><div class="tro">🏆</div><div><b>${esc(teamName(w.p))} win!</b><small>${w.c.tot} pts${cbWin?' · on countback':''}</small></div><button class="btn" data-go="results">Results</button></div>`:'';
   el.innerHTML=win+ticker+`<ol class="lb">${rows.map(({p,c,rank})=>{
-    const mv=moves[p.id]&&now-moves[p.id].t<120000?moves[p.id].d:0,hb=feed.find(e=>e.pid===p.id&&e.b&&now-e.t<900000);
+    const mv=moves[p.id]&&now-moves[p.id].t<120000?moves[p.id].d:0,hb=feed.filter(e=>e.pid===p.id&&lvOfFeed(e)&&now-e.t<900000).sort((a,b)=>lvOfFeed(b)-lvOfFeed(a))[0],hl=hb?lvOfFeed(hb):0,ht=hot[p.id];
     const st=c.thru===9?`<b>Finished</b>${c.birdies?`${c.birdies} birdie${c.birdies>1?'s':''}`:''}`:c.started?`<b>On ${c.on}</b>${c.proj!=null?`proj ${c.proj}`:`thru ${c.thru}`}`:`<b>Not started</b>`;
-    return `<li data-id="${esc(p.id)}" class="${hot[p.id]&&now-hot[p.id]<6000?'hot':''}"><details data-id="${esc(p.id)}" ${open.has(p.id)?'open':''}><summary>
+    return `<li data-id="${esc(p.id)}" class="${ht&&now-ht.t<(ht.lv>=3?16000:ht.lv===2?9000:6000)?['','hot','hot2','hot3','hot4'][ht.lv]:''}"><details data-id="${esc(p.id)}" ${open.has(p.id)?'open':''}><summary>
       <span class="pos">${rank}${mv?`<i class="mv ${mv>0?'up':'dn'}">${mv>0?'▲':'▼'}${Math.abs(mv)}</i>`:''}</span>
-      <span class="who"><b>${esc(teamName(p))}</b><small>${hb?`<span class="bb">🐦 Birdie on ${parseInt(hb.key)}!</span>`:`${esc(p.p1||'')} ${esc(fmtH(p.h1))} · ${esc(p.p2||'')} ${esc(fmtH(p.h2))}${c.three?` · ${esc(p.p3)} ${esc(fmtH(p.h3))}`:''}`}</small></span>
+      <span class="who"><b>${esc(teamName(p))}</b><small>${hb?`<span class="bb e${hl}">${hl===4?'🕊️ ALBATROSS on':hl===3?'⛳ HOLE IN ONE on':hl===2?'🦅 Eagle on':'🐦 Birdie on'} ${parseInt(hb.key)}!</span>`:`${esc(p.p1||'')} ${esc(fmtH(p.h1))} · ${esc(p.p2||'')} ${esc(fmtH(p.h2))}${c.three?` · ${esc(p.p3)} ${esc(fmtH(p.h3))}`:''}`}</small></span>
       <span class="thru">${st}</span>
       <span class="pts">${c.tot}<small>pts</small></span></summary>
       <div class="segs">${FMT.map((f,k)=>`<div class="seg" style="box-shadow:inset 0 3px 0 ${f.c}"><span>${f.n}</span><b>${c.seg[k]}</b><i>${k===0?`gets ${fmtH(c.P.a)} / ${fmtH(c.P.b)}${c.three?' / '+fmtH(c.P.c):''}`:`gets ${fmtH(k===1?c.P.g:c.P.s)}`}</i></div>`).join('')}</div>
       ${c.proj!=null?`<div class="proj">On pace for about <b>${c.proj} pts</b> after 9 holes.</div>`:''}
       <div class="scroll"><table class="sc"><tr><th>Hole</th>${c.holes.map(h=>`<th class="dot${h.f}">${h.h}</th>`).join('')}<th>Tot</th></tr>
       <tr><td>Par</td>${c.holes.map(h=>`<td>${h.par}</td>`).join('')}<td>${c.holes.reduce((a,h)=>a+h.par,0)}</td></tr>
-      <tr><td>Points</td>${c.holes.map(h=>`<td class="${h.birdie?'bd':''}"><span>${h.hp??'–'}</span></td>`).join('')}<td class="tot">${c.tot}</td></tr></table></div>
+      <tr><td>Points</td>${c.holes.map(h=>`<td class="${h.lv===4?'bd alb':h.lv===3?'bd ace':h.lv===2?'bd eg':h.birdie?'bd':''}"><span>${h.hp??'–'}</span></td>`).join('')}<td class="tot">${c.tot}</td></tr></table></div>
     </details></li>`}).join('')}</ol>
-    <div class="legend">${FMT.map((f,k)=>`<span style="--c:${f.c}">Holes ${k*3+1}–${k*3+3} ${f.n}</span>`).join('')}<span style="--c:var(--red)">Circled = birdie or better</span></div>${moreBtns()}`;
+    <div class="legend">${FMT.map((f,k)=>`<span style="--c:${f.c}">Holes ${k*3+1}–${k*3+3} ${f.n}</span>`).join('')}<span style="--c:var(--red)">Circled = birdie or better · double ring = eagle</span></div>${moreBtns()}`;
   if(!reduce)el.querySelectorAll('.lb li').forEach(li=>{const b=before[li.dataset.id];if(b==null)return;const d=b-li.getBoundingClientRect().top;
     if(Math.abs(d)>2)li.animate([{transform:`translateY(${d}px)`},{transform:'none'}],{duration:650,easing:'cubic-bezier(.2,.8,.2,1)'})});
   if(fin)celebrate(rows);
 }
 const moreBtns=()=>`<div class="more"><button class="btn ghost" data-go="results">📊 Results</button><button class="btn ghost" data-go="hist">🗂 Past rounds</button></div>`;
 function celebrate(rows){const k='fin:'+sig()+':'+rows.map(r=>r.c.tot).join('-');if(ls.get('gs-cele','')===k)return;ls.set('gs-cele',k);confetti();toast('🏆 Round complete! '+teamName(rows[0].p)+' win',3500)}
-function confetti(){if(reduce)return;const c=document.createElement('canvas');c.id='confetti';document.body.appendChild(c);const x=c.getContext('2d'),dpr=Math.min(2,devicePixelRatio||1);
-  const W=c.width=innerWidth*dpr,H=c.height=innerHeight*dpr;const cols=['#e63946','#f4b740','#4ade80','#ffffff','#2b6cb0','#1f7a4d'];
-  const ps=[...Array(170)].map(()=>({x:W/2+(Math.random()-.5)*W*.3,y:H*.35,vx:(Math.random()-.5)*16*dpr,vy:(-Math.random()*16-6)*dpr,r:Math.random()*Math.PI,vr:(Math.random()-.5)*.3,w:(6+Math.random()*7)*dpr,h:(4+Math.random()*5)*dpr,c:cols[Math.random()*cols.length|0]}));
-  const t0=performance.now();(function fr(t){const k=(t-t0)/1000;x.clearRect(0,0,W,H);for(const p of ps){p.vy+=.45*dpr;p.vx*=.99;p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;x.save();x.globalAlpha=Math.max(0,1-k/4.2);x.translate(p.x,p.y);x.rotate(p.r);x.fillStyle=p.c;x.fillRect(-p.w/2,-p.h/2,p.w,p.h);x.restore()}
-    if(k<4.2)requestAnimationFrame(fr);else c.remove()})(t0)}
+let fxc=null,fxp=[];
+function fxAdd(ps){if(reduce)return;const dpr=Math.min(2,devicePixelRatio||1);
+  if(!fxc){fxc=document.createElement('canvas');fxc.id='confetti';document.body.appendChild(fxc);fxc.width=innerWidth*dpr;fxc.height=innerHeight*dpr;requestAnimationFrame(fxFrame)}
+  const t0=performance.now();for(const p of ps(fxc.width,fxc.height,dpr)){p.t0=t0;fxp.push(p)}}
+function fxFrame(t){const x=fxc.getContext('2d'),W=fxc.width,H=fxc.height;x.clearRect(0,0,W,H);
+  fxp=fxp.filter(p=>{const k=(t-p.t0)/1000;if(k>p.life||p.y>H+60)return false;p.vy+=p.g;p.vx*=p.dr;p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;
+    x.save();x.globalAlpha=Math.max(0,Math.min(1,1-k/p.life));x.translate(p.x,p.y);x.rotate(p.r);x.fillStyle=p.c;
+    if(p.round){x.beginPath();x.arc(0,0,p.w/2,0,7);x.fill()}else x.fillRect(-p.w/2,-p.h/2,p.w,p.h);x.restore();return true});
+  if(fxp.length)requestAnimationFrame(fxFrame);else{fxc.remove();fxc=null}}
+function confetti(){const cols=['#e63946','#f4b740','#4ade80','#ffffff','#2b6cb0','#1f7a4d'];
+  fxAdd((W,H,dpr)=>[...Array(170)].map(()=>({x:W/2+(Math.random()-.5)*W*.3,y:H*.35,vx:(Math.random()-.5)*16*dpr,vy:(-Math.random()*16-6)*dpr,g:.45*dpr,dr:.99,life:4.2,r:Math.random()*Math.PI,vr:(Math.random()-.5)*.3,w:(6+Math.random()*7)*dpr,h:(4+Math.random()*5)*dpr,c:cols[Math.random()*cols.length|0]})))}
+// a burst from one point (CSS px): pow = speed, up = extra lift, dx = sideways push, round = firework dots
+function sparks({x,y,n,cols,pow,up=0,dx=0,round=false}){
+  fxAdd((W,H,dpr)=>[...Array(n)].map(()=>{const a=Math.random()*Math.PI*2,s=(.35+Math.random()*.65)*pow*dpr;
+    return{x:x*dpr,y:y*dpr,vx:Math.cos(a)*s+dx*dpr,vy:Math.sin(a)*s-up*dpr,g:(round?.18:.32)*dpr,dr:.975,life:round?1.9:3.2,r:Math.random()*Math.PI,vr:(Math.random()-.5)*.35,
+      w:(round?4+Math.random()*4:6+Math.random()*7)*dpr,h:(4+Math.random()*5)*dpr,c:cols[Math.random()*cols.length|0],round}}))}
 function pinForm(msg,role='scorer'){const a=role==='admin';return `<div class="panel"><h2 class="sec">${a?'Organiser sign-in':'Scorer sign-in'}</h2><p class="note" style="margin:0 0 10px">${msg}</p>
   <form class="row pinf" data-role="${role}"><div><label for="pin-${role}">${a?'Admin password':'Round PIN'}</label><input id="pin-${role}" type="password" autocomplete="current-password" required></div><button class="btn" style="flex:0 0 auto">Unlock</button></form></div>`}
 const myPair=()=>{const m=ls.get('gs-pair',null);return R.pairs.some(p=>p.id===m)?m:null};
@@ -371,7 +476,7 @@ function renderScore(){
   c.holes.map(h=>(h.h%3===1?`<div class="segh" style="--c:${FMT[h.f].c}">${FMT[h.f].n} · holes ${h.h}–${h.h+2}${h.f===0&&c.three?' · best 2 of 3 count':''}<span>${c.seg[h.f]} pts</span></div>`:'')+
    `<div class="hole" id="hole-${h.h}" style="--c:${FMT[h.f].c}"><div class="hh"><b>Hole ${h.h}</b><span>Par ${h.par} · SI ${esc(h.si)}</span></div>${h.e.map(x=>`
     <div class="ent"><div class="nm">${esc(x.label)}<small>${x.st>0?`${x.st} shot${x.st>1?'s':''} here`:x.st<0?`gives ${-x.st} back`:'no shot'} · plays off ${fmtH(x.ph)}</small></div>
-    <div class="step"><button data-k="${x.key}" data-d="-1" aria-label="Minus">−</button><output class="${x.bird?'bird ':''}${pop===x.key?'pop':''}">${x.gross===null?'–':x.gross===0?'P/U':x.gross}</output><button data-k="${x.key}" data-d="1" aria-label="Plus">+</button></div>
+    <div class="step"><button data-k="${x.key}" data-d="-1" aria-label="Minus">−</button><output class="${x.lv===4?'alb ':x.lv===3?'ace ':x.lv===2?'eagle ':x.bird?'bird ':''}${pop===x.key?'pop':''}">${x.gross===null?'–':x.gross===0?'P/U':x.gross}</output><button data-k="${x.key}" data-d="1" aria-label="Plus">+</button></div>
     <div class="pt ${x.pt===null||x.drop?'none':''} ${x.pt>=4&&!x.drop?'hi':''} ${pop===x.key?'pop':''}"><b>${x.pt??'–'}</b><small>${x.drop?'not counted':'pts'}</small></div></div>`).join('')}</div>`).join('');
 }
 function renderSetup(){
