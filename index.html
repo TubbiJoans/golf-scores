@@ -617,7 +617,7 @@ function renderScore(){
   const p=R.pairs.find(x=>x.id===mine),c=card(p);
   const pop=lastPop&&Date.now()-lastPop.t<700&&lastPop.pid===mine?lastPop.key:null;
   el.innerHTML=`<div class="panel">${sel}
-    <p class="note">Total <b>${c.tot} pts</b> · ${c.thru===9?'finished 🎉':'thru '+c.thru}. Tap + to start at par, or − to start at a birdie. Below 1 = pick-up (0 pts).</p>
+    <p class="note">Total <b>${c.tot} pts</b> · ${c.thru===9?'finished 🎉':'thru '+c.thru}. Tap + or − to start at par. Below 1 = pick-up (0 pts).</p>
     ${c.thru<9?(()=>{const h=c.on||teeOf(p);return `<button class="btn ghost jump" data-jump="${h}">Go to hole ${h} ↓</button>`})():''}</div>`+
   c.holes.map(h=>(h.h%3===1?`<div class="segh" style="--c:${FMT[h.f].c}">${FMT[h.f].n} · holes ${h.h}–${h.h+2}${h.f===0&&c.three?' · best 2 of 3 count':''}<span>${c.seg[h.f]} pts</span></div>`:'')+
    `<div class="hole" id="hole-${h.h}" style="--c:${FMT[h.f].c}"><div class="hh"><b>Hole ${h.h}</b><span>Par ${h.par} · SI ${esc(h.si)}</span></div>${h.e.map(x=>`
@@ -1146,7 +1146,7 @@ $('v-score').addEventListener('click',e=>{const id=e.target.id;
   if(teamOther(pid)||teamFreed(pid)){teamCheck(false);render();return}   // moved to another phone a moment ago
   buzz();
   const k=b.dataset.k,h=parseInt(k),par=+R.par[h-1]||4,cur=S[pid]?.[k];let v;
-  if(+b.dataset.d>0)v=cur==null?par:cur===0?1:Math.min(cur+1,15);else v=cur==null?par-1:cur===0?null:cur===1?0:cur-1;   // empty: − starts at a birdie
+  if(+b.dataset.d>0)v=cur==null?par:cur===0?1:Math.min(cur+1,15);else v=cur==null?par:cur===0?null:cur===1?0:cur-1;   // empty: − shows par first, then counts down
   if(v!==(cur??null))setScore(pid,k,v)});
 $('v-setup').addEventListener('input',e=>{const t=e.target;if(t.closest('.pinf')||t.id==='orgname')return;
   if(t.closest('#wl')){if(t.id==='wltext')wl.text=t.value;const u=wl.res&&wl.res.unk[+(t.dataset.wln??t.dataset.wlh)];if(u){if(t.dataset.wln!=null){u.typed=t.value;const sg=document.querySelector(`[data-wls="${t.dataset.wln}"]`);if(sg)sg.innerHTML=wlSugHtml(t.dataset.wln,t.value)}else u.h=t.value}return}   /* the pasted list is a helper, not an unsaved Setup change */
