@@ -125,6 +125,7 @@ h3.rsec{font:700 18px "Barlow Condensed",system-ui,sans-serif;margin:14px 2px 8p
 .elb .thru b{font:700 20px/1 "Barlow Condensed",system-ui,sans-serif}
 .elb .proj{margin:0}
 .efoot{display:flex;justify-content:center;margin-top:12px}
+.ehls{margin-bottom:10px}.ehls .hlc b{overflow-wrap:anywhere;line-height:1.05}
 main{max-width:720px;margin:0 auto;padding:14px max(12px,env(safe-area-inset-left)) 40px}
 main>section.show{animation:vin .22s ease-out}
 @keyframes vin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
@@ -730,14 +731,14 @@ function compute(round, scores) {
 
   const out = { kind, single: single ? single.id : null, shotgun: !!round.shotgun, segs, teams: T, groups, rows: [], prows: null, matches: null, skins: null, wolf: null, bbb: null, unit: 'pts' };
   const players = {};   // ref -> {ref, name, tid, total, thru}
-  const P = (tid, i) => { const ref = tid + ':' + SLOTS[i]; return players[ref] || (players[ref] = { ref, tid, name: byId[tid].players[i].n || 'Player ' + (i + 1), team: T[tid].name, total: 0, thru: 0, gross: 0 }); };
+  const P = (tid, i) => { const ref = tid + ':' + SLOTS[i]; return players[ref] || (players[ref] = { ref, tid, name: byId[tid].players[i].n || 'Player ' + (i + 1), team: T[tid].name, total: 0, thru: 0, gross: 0, h: {} }); };   // h: their result on each hole, for countback
   const netsOf = H => H.rows.filter(r => r.gross > 0).map(r => r.net);
   const bestNet = H => { const n = netsOf(H); return n.length ? Math.min.apply(null, n) : null; };
 
   if (kind === 'pts' || kind === 'mstab') {
     teams.forEach(t => HOLES.forEach(h => {
       const H = T[t.id].holes[h]; if (!H) return; const f = F[H.fid];
-      if (f.entry === 'ind' && single) H.rows.forEach((r, i) => { if (r.pts != null) { const p = P(t.id, i); p.total += r.pts; p.thru++; } });
+      if (f.entry === 'ind' && single) H.rows.forEach((r, i) => { if (r.pts != null) { const p = P(t.id, i); p.total += r.pts; p.thru++; p.h[h] = r.pts; } });
       const got = H.rows.filter(r => r.pts != null); if (!got.length) return;      // points show as they come in; the hole is done once every score is in
       if (f.count === 'best1') { H.tv = Math.max.apply(null, got.map(r => r.pts)); let hit = false; got.forEach(r => { r.cnt = !hit && r.pts === H.tv; if (r.cnt) hit = true; }); }
       else if (f.count !== 'ball' && H.all && got.length === 3 && three === 'best2') { const low = got.slice().sort((x, y) => x.pts - y.pts || (y.gross || 99) - (x.gross || 99))[0]; low.cnt = false; H.tv = sum(got.map(r => r.pts)) - low.pts; }
@@ -752,7 +753,7 @@ function compute(round, scores) {
     out.unit = 'net';
     teams.forEach(t => HOLES.forEach(h => {
       const H = T[t.id].holes[h];
-      H.rows.forEach((r, i) => { r.pts = null; r.net = r.gross == null ? null : r.gross === 0 ? H.par + 2 : r.gross - r.st; if (r.net != null) { const p = P(t.id, i); p.total += r.net - H.par; p.gross += r.gross === 0 ? H.par + 2 + r.st : r.gross; p.thru++; } });
+      H.rows.forEach((r, i) => { r.pts = null; r.net = r.gross == null ? null : r.gross === 0 ? H.par + 2 : r.gross - r.st; if (r.net != null) { const p = P(t.id, i); p.total += r.net - H.par; p.h[h] = r.net - H.par; p.gross += r.gross === 0 ? H.par + 2 + r.st : r.gross; p.thru++; } });
       const got = H.rows.filter(r => r.net != null); if (!got.length) return;
       let drop = 0;
       if (H.all && got.length === 3 && three === 'best2') { const hi = got.slice().sort((x, y) => y.net - x.net || (x.gross || 99) - (y.gross || 99))[0]; hi.cnt = false; drop = hi.net - H.par; }
@@ -854,7 +855,7 @@ function compute(round, scores) {
         }
         info2.holes[h] = e;
         if (e.done) {
-          pl.forEach(p => { const pr = P(p.tid, p.i); pr.total += e.pts[p.ref] || 0; pr.thru++; });
+          pl.forEach(p => { const pr = P(p.tid, p.i); pr.total += e.pts[p.ref] || 0; pr.thru++; pr.h[h] = e.pts[p.ref] || 0; });
           g.teams.forEach(id => { const H = T[id].holes[h]; H.done = true; H.tv = sum(pl.filter(p => p.tid === id).map(p => e.pts[p.ref] || 0)); });
         }
       });
@@ -878,16 +879,20 @@ function compute(round, scores) {
   order.forEach((S, i) => { S.pos = i && order[i - 1].score === S.score ? order[i - 1].pos : i + 1; });
   order.forEach(S => { S.tied = order.filter(o => o.pos === S.pos).length > 1; });
   out.rows = order;
+  out.byPlayer = false; out.complete = !!kind && teams.length > 0 && order.every(S => S.done);
   const pr = Object.keys(players).map(k => players[k]);
   if (pr.length && single && single.entry === 'ind' && (kind === 'pts' || kind === 'mstab' || kind === 'wolf' || kind === 'bbb' || kind === 'stroke')) {
     const low = kind === 'stroke', on = p => low || kind === 'mstab' ? +(p.thru > 0) : 1;   // stroke play: lowest wins; where scores can go below zero, anyone yet to start goes last
-    pr.sort((a, b) => on(b) - on(a) || (low ? a.total - b.total : b.total - a.total) || 0);
-    pr.forEach((p, i) => { p.pos = i && pr[i - 1].total === p.total && on(pr[i - 1]) === on(p) ? pr[i - 1].pos : i + 1; });
+    // Countback, once everyone has finished: the better score over holes 7-9, then 4-9, then the 9th. Level after all three: a shared place.
+    const cb = p => [[7, 8, 9], [4, 5, 6, 7, 8, 9], [9]].map(hs => (low ? -1 : 1) * sum(hs.map(h => p.h[h] || 0)));
+    const cbc = (a, b) => { if (!out.complete) return 0; const x = cb(a), y = cb(b); for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return y[i] - x[i]; return 0; };
+    pr.sort((a, b) => on(b) - on(a) || (low ? a.total - b.total : b.total - a.total) || cbc(a, b) || 0);
+    pr.forEach((p, i) => { const q = pr[i - 1]; p.pos = i && q.total === p.total && on(q) === on(p) && !cbc(q, p) ? q.pos : i + 1; });
     pr.forEach(p => { p.tied = pr.filter(o => o.pos === p.pos).length > 1; });
     out.prows = pr;
+    out.pcb = out.complete && pr.length > 1 && pr[0].total === pr[1].total && pr[0].pos !== pr[1].pos;   // the winner was decided on countback
   }
   out.byPlayer = single && single.rank === 'player' && !!out.prows;
-  out.complete = !!kind && teams.length > 0 && order.every(S => S.done);
   out.unfinished = order.filter(S => !S.done).map(S => S.name);
   out.started = order.some(S => HOLES.some(h => S.holes[h] && S.holes[h].any));
 
@@ -1238,7 +1243,7 @@ function renderBoard(){
   const ticker=`<details class="tick"${el.querySelector('.tick[open]')?' open':''}><summary><span class="dot"></span>${tk?`<span class="tx${fresh?' new':''} ${['','b','e','a','al'][lvOfFeed(tk)]}">${esc(tk.txt)}</span><span class="age">${ago(tk.t)}</span>`:`<span class="tx" style="font-weight:500;color:var(--mut)">Live updates appear here as scores come in</span>`}</summary>
     ${feed.length>1?`<ul>${feed.slice(1,8).map(e=>`<li class="${['','b','e','a','al'][lvOfFeed(e)]}"><b style="font-weight:500">${esc(e.txt)}</b><span>${ago(e.t)}</span></li>`).join('')}</ul>`:''}</details>`;
   const w=rows[0],wn=winnerOf({rows,X});
-  const win=fin?`<div class="win"><div class="tro">🏆</div><div>${k==='match'?`<b>All matches finished</b><small>Tap Results for the scores</small>`:`<b>${esc(wn.name)}${wn.verb}${wn.verb?'!':''}</b><small>${esc(wn.val)}${U?' '+U:''}${cbWin&&!X.byPlayer?' · on countback':''}</small>`}</div><button class="btn" data-go="results">Results</button></div>`:'';
+  const win=fin?`<div class="win"><div class="tro">🏆</div><div>${k==='match'?`<b>All matches finished</b><small>Tap Results for the scores</small>`:`<b>${esc(wn.name)}${wn.verb}${wn.verb?'!':''}</b><small>${esc(wn.val)}${U?' '+U:''}${(X.byPlayer?X.pcb:cbWin)?' · on countback':''}</small>`}</div><button class="btn" data-go="results">Results</button></div>`:'';
   const hv=v=>v==null?'–':(k==='stroke'||k==='par'||k==='match')&&v>0?'+'+v:String(v).replace('-','−');
   const rowName={stroke:'Net v par',par:'v par',match:'Holes',skins:'Skins'}[k]||'Points';
   // one format all round: show each player's (or the ball's) shots above the result
@@ -1495,14 +1500,33 @@ function eclFollow(){const y=eclYear();if(eclOn&&y===eclLiveY)return;
   eclUnsub=fs.onSnapshot(fs.doc(db,'rounds','eclectic-'+y),s=>{if(y!==eclLiveY)return;ECcur=s.exists()?s.data():{};if(eclY===y){EC=ECcur;if(view==='ecl')renderEcl()}},()=>{})}
 // everyone with a card, best first: fewest holes still without a score, then lowest net, then lowest gross. While the season is on,
 // everyone is ranked (a player short of the minimum is told how many more they need); once it is over, only those with the minimum count.
-function eclRows(){const par=eclPar(),out=[],over=today()>eclSeason(eclY).to;
+// by: 'net' or 'gross'. Level players are split on countback over their best-hole card: holes 7-9, then 4-9, then the 9th. On the net
+// table each step takes off the matching share of the 25% allowance (a third, two thirds, a ninth). Level after all three: a shared place.
+function eclRows(by='net'){const par=eclPar(),out=[],over=today()>eclSeason(eclY).to,net=by!=='gross';
   for(const [id,c] of Object.entries(EC.cards||{})){const rs=eclCards(c);if(!rs.length)continue;
     const now=P.find(p=>eclId(p)===id),h=now&&(!over||c.h==null)?+now.h||0:+c.h||0;   // their handicap today; once the season is over, as it was when their last card went in
     const best=par.map((_,i)=>{let v=null,from=-1;rs.forEach((r,j)=>{const x=+r.s[i]||0;if(x>0&&(v===null||x<v)){v=x;from=j}});return{v,from}});
     const miss=best.filter(b=>b.v===null).length,gross=best.reduce((a,b)=>a+(b.v||0),0);
     out.push({id,name:now?pkey(now):((c.n||'')+' '+(c.l||'')).trim()||'Player',h,rs,best,miss,gross,short:Math.max(0,ECL_MIN-rs.length),out:over&&rs.length<ECL_MIN,net:Math.round((gross-ECL_PCT*h)*100)/100})}
-  out.sort((a,b)=>a.out-b.out||a.miss-b.miss||a.net-b.net||a.gross-b.gross||a.name.localeCompare(b.name));
-  let rank=0;out.forEach((r,i)=>{const q=out[i-1];if(!q||q.out!==r.out||q.miss!==r.miss||q.net!==r.net)rank=i+1;r.rank=r.out||r.miss?null:rank});return out}
+  const k=net?'net':'gross',sb=(r,a,b)=>r.best.slice(a,b).reduce((t,x)=>t+(x.v||0),0),al=r=>net?ECL_PCT*r.h:0,r6=v=>Math.round(v*1e6)/1e6;
+  out.forEach(r=>{r.cb=[r6(sb(r,6,9)-al(r)/3),r6(sb(r,3,9)-al(r)*2/3),r6(sb(r,8,9)-al(r)/9)]});
+  const cbc=(a,b)=>{for(let i=0;i<3;i++)if(a.cb[i]!==b.cb[i])return a.cb[i]-b.cb[i];return 0};
+  out.sort((a,b)=>a.out-b.out||a.miss-b.miss||a[k]-b[k]||(a.miss?0:cbc(a,b))||a.name.localeCompare(b.name));
+  let rank=0;out.forEach((r,i)=>{const q=out[i-1];if(!q||q.out!==r.out||q.miss!==r.miss||q[k]!==r[k]||cbc(q,r))rank=i+1;r.rank=r.out||r.miss?null:rank;r.onCb=!!q&&r.rank!=null&&q.rank!=null&&q[k]===r[k]&&q.rank!==r.rank});
+  out.forEach(r=>{r.tied=r.rank!=null&&out.filter(x=>x.rank===r.rank).length>1});return out}
+const eclBy=()=>ls.get('gs-ecl-by','net')==='gross'?'gross':'net';
+// the weekly update for the WhatsApp group: both tables (top 10 each), who still needs rounds, and the link to the full table
+function eclMsg(){const se=eclSeason(eclY),t=today(),over=t>se.to,nr=eclRows('net'),gr=eclRows('gross'),N=10,cl=x=>String(x).replace(/[*_~`]/g,'').trim();
+  const list=(rs,val)=>{const r=rs.filter(x=>x.rank!=null);if(!r.length)return 'No full cards yet';
+    return r.slice(0,N).map(x=>`${x.tied?'=':''}${x.rank}. ${cl(x.name)} ${val(x)}`).join('\n')+(r.length>N?`\n…and ${r.length-N} more in the app`:'')};
+  const cards=nr.reduce((a,r)=>a+r.rs.length,0),miss=nr.filter(x=>x.miss&&!x.out).map(x=>cl(x.name)),need=nr.filter(x=>!over&&x.short).map(x=>`${cl(x.name)} (${x.short} more)`),outs=nr.filter(x=>x.out).map(x=>cl(x.name));
+  return [`⭐ *Eclectic ${se.name}* · ${over?'final results':'update '+dShort(t)}`,`${plur(nr.length,'player')} · ${plur(cards,'card')} in`,'',
+    `🏆 *Net* (best holes minus 25% of handicap)`,list(nr,x=>fmtN(x.net)),'',`⛳ *Gross* (best score on each hole)`,list(gr,x=>x.gross),
+    ...(need.length?['',`Need more rounds to qualify (${ECL_MIN} minimum): ${need.join(', ')}`]:[]),
+    ...(miss.length?['',`No total yet (a hole with no score): ${miss.join(', ')}`]:[]),
+    ...(outs.length?['',`Fewer than ${ECL_MIN} rounds, so not placed: ${outs.join(', ')}`]:[]),
+    '',`Ties are split on countback. Full table: ${appUrl()}`].join('\n')}
+async function copyText(txt,ok){try{await navigator.clipboard.writeText(txt);toast(ok,3500)}catch{toast('Could not copy. Use Share on WhatsApp instead.')}}
 // what the card being typed would do: its total, and the holes where it beats the player's best so far
 function eclFormSum(){const f=eform;if(!f)return '';const vals=f.s.map(v=>+v||0),n=vals.filter(v=>v>0).length;if(!n)return 'Type the score for each hole. Leave a hole empty if they picked up.';
   const rs=eclCards((EC.cards||{})[f.id]).filter(r=>r.rid!==f.rid),better=[];
@@ -1511,7 +1535,8 @@ function eclFormSum(){const f=eform;if(!f)return '';const vals=f.s.map(v=>+v||0)
 // kind: 'scores' = a live score came in (nothing to do here); 'force' = the app's own change, always redraw
 function renderEcl(kind){const el=$('v-ecl');if(kind==='scores')return;eclFollow();
   if(kind!=='force'&&el.contains(document.activeElement)&&document.activeElement.closest('#eform'))return;   // a live update never redraws under the organiser's fingers
-  const se=eclSeason(eclY),t=today(),open=t>=se.from&&t<=se.to,cur=eclY===eclLiveY,rows=eclRows(),par=eclPar(),adm=isAdmin()&&cur,cards=EC.cards||{};
+  const se=eclSeason(eclY),t=today(),open=t>=se.from&&t<=se.to,over=t>se.to,cur=eclY===eclLiveY,by=eclBy(),rows=eclRows(by),other=eclRows(by==='net'?'gross':'net'),par=eclPar(),adm=isAdmin()&&cur,cards=EC.cards||{};
+  const nrows=by==='net'?rows:other,grows=by==='net'?other:rows;
   const was=new Set([...el.querySelectorAll('.lb details[open]')].map(d=>d.dataset.id));
   let h=`<div class="ehead"><div><h2>Eclectic ${se.name}</h2><small>1 Nov – 28 Feb · your best score on each hole, from ${ECL_MIN} to ${ECL_MAX} rounds</small></div><span class="echip${open?' on':''}">${t<se.from?'Starts 1 Nov':open?'Open':'Final'}</span></div>`;
   if(adm&&eform){const f=eform,old=cards[f.id],nm=old&&!P.some(p=>eclId(p)===f.id)?((old.n||'')+' '+(old.l||'')).trim():'';
@@ -1522,18 +1547,24 @@ function renderEcl(kind){const el=$('v-ecl');if(kind==='scores')return;eclFollow
       <p class="note" id="esum">${eclFormSum()}</p>
       <div class="row"><button class="btn ghost" id="ecancel" type="button">Cancel</button>${f.rid?`<button class="btn warn" id="edel" type="button">Delete card</button>`:''}<button class="btn" id="esave" type="button">Save card</button></div></div>`}
   else if(adm)h+=`<button class="btn" id="eadd" type="button" style="width:100%;margin-bottom:12px">＋ Add a player’s card</button>`;
+  if(isAdmin()&&!eform&&rows.length)h+=`<div class="row" style="margin:-4px 0 12px"><a class="btn wa" id="ewa" href="#" target="_blank" rel="noopener">Share update on WhatsApp</a><a class="btn ghost copy" id="ecopy" href="#" role="button" style="flex:0 0 auto">Copy</a></div>`;
+  // the two leaders, then the table the viewer picked (net or gross)
+  const lead=(rs,lab,val,c)=>{const top=rs.filter(r=>r.rank===1),cbk=rs.some(r=>r.onCb&&r.rank===2);
+    return `<div class="hlc" style="--c:${c}"><span>${lab} ${over?'winner':'leader'}</span><b>${top.length?esc(top.map(r=>r.name).join(' & ')):'–'}</b><small>${top.length?val(top[0])+(top.length>1?' · tied':cbk?' · on countback':''):'No full card yet'}</small></div>`};
+  if(rows.length)h+=`<div class="hls ehls">${lead(nrows,'Net',r=>fmtN(r.net)+' net','var(--gold)')}${lead(grows,'Gross',r=>r.gross+' gross','var(--g2)')}</div>
+    <div class="segc" role="tablist"><button type="button" data-eby="net" class="${by==='net'?'on':''}">Net</button><button type="button" data-eby="gross" class="${by==='gross'?'on':''}">Gross</button></div>`;
   const ring=(v,p)=>{const lv=lvOf(v,p);return lv===4?'bd alb':lv===3?'bd ace':lv===2?'bd eg':lv===1?'bd':''};
   h+=rows.length?`<ol class="lb elb">${rows.map(r=>`<li data-id="${esc(r.id)}"><details data-id="${esc(r.id)}"${was.has(r.id)?' open':''}><summary>
       <span class="pos">${r.rank??'–'}</span>
       <span class="who"><b>${esc(r.name)}</b><small>${r.out?`${plur(r.rs.length,'round')} · needed ${ECL_MIN}`:r.short?`${plur(r.rs.length,'round')} · needs ${r.short} more`:`${r.rs.length} of ${ECL_MAX} rounds`}</small></span>
-      <span class="thru"><b>${r.gross}</b>gross</span>
-      <span class="pts">${r.miss?'–':fmtN(r.net)}<small>net</small></span></summary>
+      <span class="thru">${by==='gross'?`<b>${r.miss?'–':fmtN(r.net)}</b>net`:`<b>${r.gross}</b>gross`}</span>
+      <span class="pts">${r.miss?'–':by==='gross'?r.gross:fmtN(r.net)}<small>${by}</small></span></summary>
       <p class="proj">${r.miss?`No score yet on hole${r.miss>1?'s':''} ${r.best.map((b,i)=>b.v===null?i+1:0).filter(Boolean).join(', ')}, so no total yet.`:`Net ${fmtN(r.net)} = ${r.gross} ${r.h<0?'+':'−'} ${fmtN(Math.abs(ECL_PCT*r.h))} (25% of handicap ${esc(fmtH(r.h))}).`}</p>
       <div class="scroll"><table class="sc"><tr><th>Hole</th>${par.map((_,i)=>`<th>${i+1}</th>`).join('')}<th>Tot</th></tr>
       <tr><td>Par</td>${par.map(v=>`<td>${v}</td>`).join('')}<td>${par.reduce((a,v)=>a+v,0)}</td></tr>
       <tr><td>Best</td>${r.best.map((b,i)=>`<td class="${ring(b.v,par[i])}"><span>${b.v??'–'}</span></td>`).join('')}<td class="tot">${r.gross}</td></tr>
       ${r.rs.map((rd,j)=>`<tr class="erd"><td>${adm?`<button class="elink" type="button" data-eedit="${esc(r.id)}" data-rid="${esc(rd.rid)}">${esc(dShort(rd.d))} ✎</button>`:esc(dShort(rd.d))}</td>${par.map((_,i)=>`<td class="${r.best[i].from===j?'eb':''}">${+rd.s[i]||'·'}</td>`).join('')}<td>${rd.s.reduce((a,v)=>a+(+v||0),0)}</td></tr>`).join('')}</table></div>
-    </details></li>`).join('')}</ol><p class="note" style="margin:10px 2px 0">Net score = eclectic total minus 25% of handicap. Lowest wins. You need at least ${ECL_MIN} rounds to count at the end, and can play up to ${ECL_MAX}. Tap a player to see their cards; the scores in bold are the ones that count.</p>`
+    </details></li>`).join('')}</ol><p class="note" style="margin:10px 2px 0">Gross = your best score on each hole added up. Net = gross minus 25% of handicap. Lowest wins both; ties are split on countback (holes 7–9, then 4–9, then the 9th). You need at least ${ECL_MIN} rounds to count at the end, and can play up to ${ECL_MAX}. Tap a player to see their cards; the scores in bold are the ones that count.</p>`
     :`<div class="empty"><div class="ill">⭐</div><h2>No cards yet</h2><p>${t<se.from?'The season starts on 1 November.':'After each round the organiser adds your 9-hole card here. Your best score on every hole builds your eclectic.'}</p></div>`;
   h+=`<div class="efoot">${cur?`<button class="elink" type="button" data-eyear="${eclY-1}">‹ Last season (${eclSeason(eclY-1).name})</button>`:`<button class="btn ghost" type="button" data-eyear="${eclLiveY}">Back to this season ›</button>`}</div>`;
   el.innerHTML=h}
@@ -1551,8 +1582,11 @@ $('v-ecl').addEventListener('input',e=>{const t=e.target,f=eform;if(!f)return;
   else if(t.dataset.es!=null){const i=+t.dataset.es,v=t.value.replace(/\D/g,'').slice(0,2);if(v!==t.value)t.value=v;f.s[i]=v;$('esum').innerHTML=eclFormSum();
     if((v.length===1&&v!=='1')||v.length===2){const nx=document.querySelector(`[data-es="${i+1}"]`);if(nx){nx.focus();nx.select()}else t.blur()}}});   // one digit is enough unless it starts with 1 (10 and up)
 $('v-ecl').addEventListener('change',e=>{if(e.target.id==='eplayer'&&eform){eform.id=e.target.value;$('esum').innerHTML=eclFormSum()}});
-$('v-ecl').addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;
+$('v-ecl').addEventListener('click',e=>{const t=e.target.closest('button,a');if(!t)return;
   if(t.dataset.eyear){eclGo(+t.dataset.eyear);return}
+  if(t.dataset.eby){buzz();ls.set('gs-ecl-by',t.dataset.eby);renderEcl('force');return}
+  if(t.id==='ewa'){if(!isAdmin()){e.preventDefault();return}t.href=waUrl(eclMsg());return}                    // the link opens after this handler, with the new href
+  if(t.id==='ecopy'){e.preventDefault();if(isAdmin())copyText(eclMsg(),'Update copied. Paste it into the WhatsApp group.');return}
   {const y0=eclLiveY,had=!!eform;eclFollow();if(eclLiveY!==y0){renderEcl('force');if(had)toast(`The ${eclSeason(eclLiveY).name} season has started, so that card was not saved. Add it again if it belongs to the new season.`,6000);return}}
   if(!isAdmin()||eclY!==eclLiveY)return;const se=eclSeason(eclY),td=today();
   if(t.id==='eadd'){eform={id:'',d:td>se.to?se.to:td<se.from?se.from:td,s:Array(9).fill(''),rid:null};renderEcl('force');return}
@@ -1960,7 +1994,7 @@ function renderResults(){
   const medal=r=>r<=3&&s.any?['🥇','🥈','🥉'][r-1]:r;
   el.innerHTML=`<div class="rhead">${back}<div><h2>${s.fin?'Final results':'Results so far'}</h2><small>${esc(RR.title||'')} · ${esc(RR.course||'')}${fm.key!=='house'&&fm.name!==RR.title?' · '+esc(fm.name):''}${date?' · '+esc(date):''}</small></div></div>
     ${s.any?'':`<div class="empty" style="padding:16px"><p>No scores yet. Standings fill in as scorers enter holes.</p></div>`}
-    ${X.byPlayer?`<h3 class="rsec">Players</h3><ol class="stand pstand">${X.prows.map(q=>`<li><span class="md">${medal(q.pos)}</span><span><b>${esc(q.name)}</b><span class="sp" style="display:block">${esc(q.team)}${k==='stroke'&&q.thru?` · gross ${q.gross}`:''}${q.thru<9?` · thru ${q.thru}`:''}</span></span><span class="pts">${esc(pdisp(X,q))}<small>${U}</small></span></li>`).join('')}</ol><h3 class="rsec">Teams</h3>`:''}
+    ${X.byPlayer?`<h3 class="rsec">Players</h3><ol class="stand pstand">${X.prows.map(q=>`<li><span class="md">${medal(q.pos)}</span><span><b>${esc(q.name)}</b><span class="sp" style="display:block">${esc(q.team)}${k==='stroke'&&q.thru?` · gross ${q.gross}`:''}${q.thru<9?` · thru ${q.thru}`:''}</span></span><span class="pts">${esc(pdisp(X,q))}<small>${U}</small></span></li>`).join('')}</ol>${X.pcb?`<p class="note" style="margin:-4px 2px 12px">Tie on ${k==='stroke'?'net score':'points'}: decided on countback (last 3 holes, then last 6, then the 9th).</p>`:''}<h3 class="rsec">Teams</h3>`:''}
     <ol class="stand">${s.rows.map(({p,c,rank})=>`<li><span class="md">${medal(rank)}</span><span><b>${esc(teamName(p))}</b><span class="sp" style="display:block">${esc(resSub(s,c))}</span></span><span class="pts">${esc(c.disp)}<small>${U}</small></span></li>`).join('')}</ol>
     ${s.cbWin?`<p class="note" style="margin:-4px 2px 12px">Tie on ${k==='stroke'?'net score':'points'}: decided on countback (last 3 holes, then last 6, then the 9th).</p>`:''}
     ${s.any?`<div class="hls">
