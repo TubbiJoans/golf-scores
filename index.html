@@ -8,7 +8,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Golf Scores">
-<meta name="description" content="Live leaderboard and scoring for Pairs 3-3-3 Stableford at Jebel Sifah">
+<meta name="description" content="Live leaderboard and scoring for Friday golf at Jebel Sifah">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -353,6 +353,10 @@ h2.sec{font:700 22px "Barlow Condensed",system-ui,sans-serif;margin:0 0 8px}
 .back{border:0;background:var(--g3);color:var(--g);border-radius:10px;min-height:44px;padding:0 12px;font-weight:700;cursor:pointer;flex:none}
 .stand{list-style:none;margin:0 0 12px;padding:0;display:grid;gap:8px}
 .stand li{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:10px;align-items:center;background:var(--card);border-radius:14px;padding:10px 14px;box-shadow:0 1px 0 var(--line)}
+.stand li.tcard{display:block;padding:0;overflow:hidden}
+.stand .tcard summary{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 14px;min-height:56px;list-style:none;cursor:pointer}
+.stand .tcard summary::-webkit-details-marker{display:none}
+.stand .tcard details[open] summary{border-bottom:1px solid var(--line);margin-bottom:10px}
 .stand .md{font-size:26px;text-align:center;font-weight:700;font-family:"Barlow Condensed",system-ui,sans-serif;color:var(--g)}
 .stand li:first-child{background:linear-gradient(135deg,#fff8e6,#fff);box-shadow:0 0 0 2px var(--gold)}
 .stand .sp{font-size:12px;color:var(--mut)}
@@ -454,7 +458,7 @@ h2.sec{font:700 22px "Barlow Condensed",system-ui,sans-serif;margin:0 0 8px}
 <header class="top">
   <div class="brand">
     <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect x="15" y="4" width="2.4" height="24" fill="#fff"/><path d="M17.4 4.5 28 8.5 17.4 12.6z" fill="#e63946"/><ellipse cx="17" cy="29" rx="11" ry="3" fill="#1f5c44"/></svg>
-    <div><h1 id="title">Golf Scores</h1><p id="sub">Pairs 3-3-3 Stableford</p></div>
+    <div><h1 id="title">Friday Golf</h1><p id="sub">Jebel Sifah · Front 9</p></div>
   </div>
   <span id="net" class="net">Connecting…</span>
 </header>
@@ -926,7 +930,7 @@ const firebaseConfig = {
 const SDK='https://www.gstatic.com/firebasejs/10.12.2/';
 const EMAIL='scorer@sifah.golf',ADMIN='admin@sifah.golf';
 const isAdmin=()=>!!user&&user.email===ADMIN;
-const DEF={title:'Pairs 3-3-3 Stableford',course:'Jebel Sifah · Front 9',par:[4,4,5,4,5,3,4,3,4],si:[13,1,5,15,9,11,3,17,7],pairs:[]};
+const DEF={title:'Friday Golf',course:'Jebel Sifah · Front 9',par:[4,4,5,4,5,3,4,3,4],si:[13,1,5,15,9,11,3,17,7],pairs:[]};
 const ROSTER=[["Abs", "Al Balushi", 28], ["Adrian", "Clifford", 28], ["Alan", "Hill", 26.2], ["Bradley", "Viljoen", 19], ["Chris", "MacDonald", 22], ["Elizabeth", "Shearer", 36], ["Emma", "Fenton", 36], ["Fiona", "Hanks", 36], ["Frans", "Kohler", 22], ["Freek", "van Dijk", 28], ["Gay", "Clifford", 36], ["Gerry", "Woods", 10], ["Heiderose", "Mossen", 31], ["Hudson", "Kemp", 14], ["Iain", "Watford", 23], ["Jaime", "Kemp", 36], ["James", "Thompson", 15], ["Jenna", "Viljoen", 36], ["Johnny", "Agapie", 28], ["Neil", "McLoughlin", 28], ["Ninien", "Blignault", 30], ["Petra", "Markt", 31.4], ["Saif", "Al Abdullatif", 28], ["Sheldon", "Kemp", 18], ["Stephen", "Martin", 28], ["Tim", "Fenton", 10], ["Vanessa", "Jackson", 21], ["Willie", "Fourie", 28], ["Yvonne", "Grant", 30], ["Jonathan", "Grant", 25], ["Ben", "Martin", 28], ["Mark", "Geilenkirchen", 28], ["Esther", "Grootenboer", 28], ["Erwen", "De La Cruz", 18], ["Fred", "van Nieuwenhuizen", 28], ["Brian", "Wilson", 26], ["Jenny", "Wilson", 36], ["Ed", "Price", 28], ["Jan-Willen", "van Lienden", 18.5], ["Kamil", "Weinhold", 28], ["Gina", "Sanda", 25], ["Cristian", "Sanda", 15], ["Chantal", "Vlaarkamp", 36], ["Chon", "Humtsoe", 22]];
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1219,8 +1223,10 @@ function holeInOne(ck,at,p,name,h,par,askPid){if(document.hidden)return;
     setTimeout(()=>q.remove(),ms)},reduce?300:700)}}
 
 // ---------- rendering ----------
+const autoTitle=t=>!t||t===DEF.title||t==='Pairs 3-3-3 Stableford'||t==='Mix 3-3-3'||E.ALL.some(id=>E.info(id).name===t);
+const rTitle=(RR=R)=>{const t=String((RR&&RR.title)||'').trim();return autoTitle(t)?DEF.title:t};
 function render(kind){loadFeed();
-  $('title').textContent=R.title||'Golf Scores';$('sub').textContent=R.course||'';
+  $('title').textContent=rTitle();$('sub').textContent=R.course||'';
   if(view==='board')renderBoard();
   else if(view==='score'){if(document.activeElement&&/^(pairsel|tname)$/.test(document.activeElement.id))return;renderScore()}
   else if(view==='results')renderResults();
@@ -1244,10 +1250,6 @@ function renderBoard(){
     ${feed.length>1?`<ul>${feed.slice(1,8).map(e=>`<li class="${['','b','e','a','al'][lvOfFeed(e)]}"><b style="font-weight:500">${esc(e.txt)}</b><span>${ago(e.t)}</span></li>`).join('')}</ul>`:''}</details>`;
   const w=rows[0],wn=winnerOf({rows,X});
   const win=fin?`<div class="win"><div class="tro">🏆</div><div>${k==='match'?`<b>All matches finished</b><small>Tap Results for the scores</small>`:`<b>${esc(wn.name)}${wn.verb}${wn.verb?'!':''}</b><small>${esc(wn.val)}${U?' '+U:''}${(X.byPlayer?X.pcb:cbWin)?' · on countback':''}</small>`}</div><button class="btn" data-go="results">Results</button></div>`:'';
-  const hv=v=>v==null?'–':(k==='stroke'||k==='par'||k==='match')&&v>0?'+'+v:String(v).replace('-','−');
-  const rowName={stroke:'Net v par',par:'v par',match:'Holes',skins:'Skins'}[k]||'Points';
-  // one format all round: show each player's (or the ball's) shots above the result
-  const gro=c=>mu?'':c.holes[0].e.map((x0,i)=>`<tr><td>${esc(x0.key.length>1?first(x0.label):'Ball')}</td>${c.holes.map(h=>{const x=h.e[i];return `<td>${!x||x.gross===null?'·':x.gross===0?'P':x.gross}</td>`}).join('')}<td>${c.holes.reduce((a,h)=>a+(h.e[i]&&h.e[i].gross>0?h.e[i].gross:0),0)||''}</td></tr>`).join('');
   const teams=()=>`<ol class="lb">${rows.map(({p,c,rank})=>{
     const mv=moves[p.id]&&now-moves[p.id].t<120000?moves[p.id].d:0,hb=feed.filter(e=>e.pid===p.id&&lvOfFeed(e)&&now-e.t<900000).sort((a,b)=>lvOfFeed(b)-lvOfFeed(a))[0],hl=hb?lvOfFeed(hb):0,ht=hot[p.id];
     const st=c.fin?`<b>Finished</b>${c.birdies?`${c.birdies} birdie${c.birdies>1?'s':''}`:''}`:c.started?`<b>${c.on?'On '+c.on:'Thru '+c.thru}</b>${c.proj!=null?`proj ${c.proj}`:c.on?`thru ${c.thru}`:''}`:`<b>Not started</b>`;
@@ -1257,12 +1259,7 @@ function renderBoard(){
       <span class="who"><b>${esc(teamName(p))}</b><small>${hb?`<span class="bb e${hl}" style="animation-delay:-${((now-hb.t)/1000).toFixed(2)}s">${hl===4?'🕊\uFE0F ALBATROSS on':hl===3?'⛳ HOLE IN ONE on':hl===2?'🦅 Eagle on':'🐦 Birdie on'} ${parseInt(hb.key)}!</span>`:`${esc(p.p1||'')} ${esc(fmtH(p.h1))} · ${esc(p.p2||'')} ${esc(fmtH(p.h2))}${c.three?` · ${esc(p.p3)} ${esc(fmtH(p.h3))}`:''}`}</small></span>
       <span class="thru">${st}</span>
       <span class="pts">${esc(c.disp)}<small>${U}</small></span></summary>
-      <div class="segs">${sg.map((f,i)=>`<div class="seg" style="box-shadow:inset 0 3px 0 ${f.c}"><span>${f.n}</span><b>${hv(c.seg[i])}</b><i>${mu?`gets ${c.gets(i)}`:''}</i></div>`).join('')}</div>
-      ${c.proj!=null?`<div class="proj">On pace for about <b>${c.proj} pts</b> after 9 holes.</div>`:''}
-      ${!mu&&k!=='bbb'?`<div class="proj">${k==='match'?(c.T.opp?`Playing ${esc(c.T.opp)} · ${esc(c.T.sub||'')}. `:'No opponent in this group. '):''}Strokes today: ${esc(c.gets(0))}</div>`:''}
-      <div class="scroll"><table class="sc"><tr><th>Hole</th>${c.holes.map(h=>`<th class="${mu?'dot'+h.f:''}">${h.h}</th>`).join('')}<th>Tot</th></tr>
-      <tr><td>Par</td>${c.holes.map(h=>`<td>${h.par}</td>`).join('')}<td>${c.holes.reduce((a,h)=>a+h.par,0)}</td></tr>${gro(c)}
-      <tr><td>${rowName}</td>${c.holes.map(h=>`<td class="${h.lv===4?'bd alb':h.lv===3?'bd ace':h.lv===2?'bd eg':h.birdie?'bd':''}"><span>${hv(h.hp)}</span></td>`).join('')}<td class="tot">${esc(c.disp)}</td></tr></table></div>
+      ${cardBody(c,X)}
     </details></li>`}).join('')}</ol>`;
   const players=()=>`<ol class="lb plb">${X.prows.map(q=>`<li data-id="${esc(q.ref)}"><div class="prw"><span class="pos">${q.pos}</span><span class="who"><b>${esc(q.name)}</b><small>${esc(q.team)}</small></span>
       <span class="thru"><b>${q.thru>=9?'Finished':q.thru?'Thru '+q.thru:'Not started'}</b>${k==='stroke'&&q.thru?`gross ${q.gross}`:''}</span><span class="pts">${esc(pdisp(X,q))}<small>${U}</small></span></div></li>`).join('')}</ol>`;
@@ -1272,6 +1269,18 @@ function renderBoard(){
     if(Math.abs(d)>2)li.animate([{transform:`translateY(${d}px)`},{transform:'none'}],{duration:650,easing:'cubic-bezier(.2,.8,.2,1)'})});
   if(fin)celebrate(rows,X);
 }
+// one team's scorecard: the three parts (formats of a 3-3-3, or thirds of the round), strokes, and hole by hole. Leaderboard and Results.
+function cardBody(c,X,RR=R){const k=X.kind,sg=segsOf(RR),mu=multi(RR);
+  const hv=v=>v==null?'–':(k==='stroke'||k==='par'||k==='match')&&v>0?'+'+v:String(v).replace('-','−');
+  const rowName={stroke:'Net v par',par:'v par',match:'Holes',skins:'Skins'}[k]||'Points';
+  // one format all round: show each player's (or the ball's) shots above the result
+  const gro=mu?'':c.holes[0].e.map((x0,i)=>`<tr><td>${esc(x0.key.length>1?first(x0.label):'Ball')}</td>${c.holes.map(h=>{const x=h.e[i];return `<td>${!x||x.gross===null?'·':x.gross===0?'P':x.gross}</td>`}).join('')}<td>${c.holes.reduce((a,h)=>a+(h.e[i]&&h.e[i].gross>0?h.e[i].gross:0),0)||''}</td></tr>`).join('');
+  return `<div class="segs">${sg.map((f,i)=>`<div class="seg" style="box-shadow:inset 0 3px 0 ${f.c}"><span>${f.n}</span><b>${hv(c.seg[i])}</b><i>${mu?`gets ${c.gets(i)}`:''}</i></div>`).join('')}</div>
+      ${c.proj!=null?`<div class="proj">On pace for about <b>${c.proj} pts</b> after 9 holes.</div>`:''}
+      ${!mu&&k!=='bbb'?`<div class="proj">${k==='match'?(c.T.opp?`Playing ${esc(c.T.opp)} · ${esc(c.T.sub||'')}. `:'No opponent in this group. '):''}Strokes: ${esc(c.gets(0))}</div>`:''}
+      <div class="scroll"><table class="sc"><tr><th>Hole</th>${c.holes.map(h=>`<th class="${mu?'dot'+h.f:''}">${h.h}</th>`).join('')}<th>Tot</th></tr>
+      <tr><td>Par</td>${c.holes.map(h=>`<td>${h.par}</td>`).join('')}<td>${c.holes.reduce((a,h)=>a+h.par,0)}</td></tr>${gro}
+      <tr><td>${rowName}</td>${c.holes.map(h=>`<td class="${h.lv===4?'bd alb':h.lv===3?'bd ace':h.lv===2?'bd eg':h.birdie?'bd':''}"><span>${hv(h.hp)}</span></td>`).join('')}<td class="tot">${esc(c.disp)}</td></tr></table></div>`}
 // today's format across the top of the leaderboard: tap it for the rules and today's playing handicaps
 const fban=()=>{const f=curFmt();return `<button class="fban" type="button" data-rules><span><b>${fmtIcon(f)} ${esc(f.name)}</b><small>${f.segs.length>1?f.segs.map(s=>`${s.holes[0]}–${s.holes[s.holes.length-1]} ${esc(F[s.f].short)}`).join(' · '):esc(F[f.segs[0].f].how)}</small></span><small>Rules ›</small></button>`};
 const plur=(n,w)=>n+' '+w+(n===1?'':'s');
@@ -1468,8 +1477,7 @@ async function fmtLock(btn){let f=fsel.res;if(!f||fsel.spin||!setupWriteOk())ret
   const scored=R.pairs.some(p=>Object.values(S[p.id]||{}).some(v=>v!=null));
   if(scored&&f.key!==curFmt().key&&Date.now()-fsel.arm>5000){fsel.arm=Date.now();btn.classList.add('armed');btn.textContent='Scores exist! Tap again';toast('This round already has scores. Changing the format scores them again the new way. Tap again to go ahead.',5000);return}
   // the round's title follows the format, unless the organiser gave it a title of their own
-  const auto=!R.title||R.title===DEF.title||R.title==='Mix 3-3-3'||E.ALL.some(id=>E.info(id).name===R.title);
-  try{btn.disabled=true;const fm={mode:f.mode,key:f.key,name:f.name,segs:f.segs,at:Date.now()},data={...R,...(auto?{title:f.key==='house'?DEF.title:f.name}:{}),fmt:fm};
+  try{btn.disabled=true;const fm={mode:f.mode,key:f.key,name:f.name,segs:f.segs,at:Date.now()},data={...R,title:rTitle(),fmt:fm};   // choosing a format never renames the round
     if(LOCAL)await saveRound(data);else{const b=fs.writeBatch(db);b.set(fs.doc(db,'rounds','current'),data);b.set(fs.doc(db,'rounds','format'),{fmt:fm,appv:APPV});await b.commit()}
     Object.assign(fsel,{res:null,note:'',open:false,arm:0});toast(`${f.name} it is. Every phone now scores this format.`,3500);if(view==='setup'&&!setupDirty)renderSetup()}
   catch(err){toast('Not saved: '+(err.code||err.message))}finally{btn.disabled=false}}
@@ -1614,7 +1622,7 @@ function renderSetup(){
   const scored=R.pairs.some(p=>Object.values(S[p.id]||{}).some(v=>v!=null));
   el.innerHTML=`<div id="slock" class="slock" role="status" hidden></div>
   <fieldset class="lk" id="lk-round"><div class="panel"><h2 class="sec">Round</h2><div class="row">
-    <div><label for="t-title">Title</label><input id="t-title" value="${esc(R.title)}"></div>
+    <div><label for="t-title">Title</label><input id="t-title" value="${esc(rTitle())}"></div>
     <div><label for="t-course">Course</label><input id="t-course" value="${esc(R.course)}"></div>
     <div class="ttime"><label for="t-time">Tee-off time</label><div class="tt"><input id="t-time" type="time" value="${esc(R.time||'')}"><button class="btn ghost" id="t-time-x" type="button" aria-label="Clear the tee-off time">Clear</button></div></div></div>
     <p class="note" style="margin:6px 0 0">The tee-off time goes in the WhatsApp teams message (Clear it to leave it out). It stays from week to week, so check it before you share the teams.</p></div>
@@ -1954,7 +1962,7 @@ const fmtTime=t=>{const m=/^(\d{1,2}):(\d{2})/.exec(t||'');if(!m)return '';const
 function teamsMsg(teams){
   const who=t=>{const x=t.ps.map(p=>p.n+(p.h!==''&&p.h!=null?` (${fmtH(p.h)})`:''));return x.length>2?x.slice(0,-1).join(', ')+' & '+x[x.length-1]:x.join(' & ')};
   const nm=t=>t.name.replace(/[*_~`]/g,'').trim();
-  return `⛳ ${R.title||'Golf'}${R.course?' · '+R.course:''}\n${fmtTime(R.time)?`🕖 Tee-off: *${fmtTime(R.time)}*\n`:''}${(f=>f.key==='house'?'':`🎲 Format: *${f.name}*\n${fmtLine(f)}\n`)(curFmt())}Teams and starting holes:\n\n`+
+  return `⛳ ${rTitle()}${R.course?' · '+R.course:''}\n${fmtTime(R.time)?`🕖 Tee-off: *${fmtTime(R.time)}*\n`:''}${(f=>`🎲 Format: *${f.name}*\n${fmtLine(f)}\n`)(curFmt())}Teams and starting holes:\n\n`+
     teeGroups(teams,t=>t.ps.length>2).map(g=>`*Hole ${g.hole}*${g.second?' (2nd group)':''}\n`+g.xs.map(t=>`${t.num}. ${nm(t)?`*${nm(t)}*: `:''}${who(t)}`).join('\n')).join('\n\n')+
     `\n\nLive scores: ${appUrl()}`}
 const savedTeams=()=>R.pairs.filter(p=>p.p1||p.p2).map((p,i)=>({num:i+1,tg:p.tg,name:p.name||'',ps:[{n:p.p1||'Player 1',h:p.h1},{n:p.p2||'Player 2',h:p.h2},...(p.p3?[{n:p.p3,h:p.h3}]:[])]}));
@@ -1990,12 +1998,14 @@ function renderResults(){
   const el=$('v-results'),src=resSrc||liveSrc(),RR=src.R;
   const back=`<button class="back" data-go="${resSrc?'hist':'board'}">‹ Back</button>`;
   if(!(RR.pairs||[]).length){el.innerHTML=`<div class="rhead">${back}<h2>Results</h2></div><div class="empty"><div class="ill">📊</div><h2>Nothing to show yet</h2><p>Results appear once the teams are drawn and scores come in.</p></div>`;return}
+  const was=new Set([...el.querySelectorAll('.stand details[open]')].map(d=>d.dataset.id));
   const s=summary(src),{X,k,sg,mu,U}=s,fm=curFmt(RR),date=src.at?new Date(src.at).toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short',year:'numeric'}):'';
   const medal=r=>r<=3&&s.any?['🥇','🥈','🥉'][r-1]:r;
-  el.innerHTML=`<div class="rhead">${back}<div><h2>${s.fin?'Final results':'Results so far'}</h2><small>${esc(RR.title||'')} · ${esc(RR.course||'')}${fm.key!=='house'&&fm.name!==RR.title?' · '+esc(fm.name):''}${date?' · '+esc(date):''}</small></div></div>
+  el.innerHTML=`<div class="rhead">${back}<div><h2>${s.fin?'Final results':'Results so far'}</h2><small>${esc(rTitle(RR))} · ${esc(RR.course||'')}${fm.name!==rTitle(RR)?' · '+esc(fm.name):''}${date?' · '+esc(date):''}</small></div></div>
     ${s.any?'':`<div class="empty" style="padding:16px"><p>No scores yet. Standings fill in as scorers enter holes.</p></div>`}
     ${X.byPlayer?`<h3 class="rsec">Players</h3><ol class="stand pstand">${X.prows.map(q=>`<li><span class="md">${medal(q.pos)}</span><span><b>${esc(q.name)}</b><span class="sp" style="display:block">${esc(q.team)}${k==='stroke'&&q.thru?` · gross ${q.gross}`:''}${q.thru<9?` · thru ${q.thru}`:''}</span></span><span class="pts">${esc(pdisp(X,q))}<small>${U}</small></span></li>`).join('')}</ol>${X.pcb?`<p class="note" style="margin:-4px 2px 12px">Tie on ${k==='stroke'?'net score':'points'}: decided on countback (last 3 holes, then last 6, then the 9th).</p>`:''}<h3 class="rsec">Teams</h3>`:''}
-    <ol class="stand">${s.rows.map(({p,c,rank})=>`<li><span class="md">${medal(rank)}</span><span><b>${esc(teamName(p))}</b><span class="sp" style="display:block">${esc(resSub(s,c))}</span></span><span class="pts">${esc(c.disp)}<small>${U}</small></span></li>`).join('')}</ol>
+    <ol class="stand">${s.rows.map(({p,c,rank})=>`<li class="tcard"><details data-id="${esc(p.id)}"${was.has(p.id)?' open':''}><summary><span class="md">${medal(rank)}</span><span><b>${esc(teamName(p))}</b><span class="sp" style="display:block">${esc(resSub(s,c))}</span></span><span class="pts">${esc(c.disp)}<small>${U}</small></span></summary>${cardBody(c,X,RR)}</details></li>`).join('')}</ol>
+    ${s.any?`<p class="note" style="margin:-4px 2px 12px">Tap a team to see its scorecard.</p>`:''}
     ${s.cbWin?`<p class="note" style="margin:-4px 2px 12px">Tie on ${k==='stroke'?'net score':'points'}: decided on countback (last 3 holes, then last 6, then the 9th).</p>`:''}
     ${s.any?`<div class="hls">
       ${k==='pts'?`<div class="hlc" style="--c:var(--red)"><span>Best hole</span><b>${s.best?esc(teamName(s.best.p)):'–'}</b><small>${s.best?`${s.best.pts} pts on hole ${s.best.h}`:''}</small></div>`:''}
@@ -2014,7 +2024,7 @@ function renderHist(){
     loadHist().then(h=>{hist=h;if(view==='hist')renderHist()}).catch(e=>{hist=[];el.innerHTML=head+`<div class="empty"><p>Couldn't load past rounds (${esc(e.code||e.message)}).</p></div>`});return}
   if(hist===undefined)return;
   el.innerHTML=head+(hist.length?`<ul class="hist">${hist.map(a=>{const s=summary({R:a,S:a.scores||{}}),w=winnerOf(s);
-      return `<li><button data-arch="${esc(a.id)}"><span><b>${esc(new Date(a.at).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}))} · ${esc(a.title||'Round')}</b><small>🏆 ${w?esc(w.name):'–'} · ${(a.pairs||[]).length} teams${fmtOK(a.fmt)&&a.fmt.key!=='house'?' · '+esc(a.fmt.name):''}</small></span><span class="w">${w?esc(w.val):''}</span></button>${isAdmin()?(()=>{const armed=Date.now()-(delArm[a.id]||0)<4000;return `<button class="del${armed?' armed':''}" data-del="${esc(a.id)}" type="button" aria-label="Delete the past round from ${esc(new Date(a.at).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}))}">${armed?'Delete?':'🗑'}</button>`})():''}</li>`}).join('')}</ul>${isAdmin()?`<p class="note" style="margin:10px 2px 0">Organiser: tap 🗑 twice to delete a past round for everyone.</p>`:''}`
+      return `<li><button data-arch="${esc(a.id)}"><span><b>${esc(new Date(a.at).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}))} · ${esc(autoTitle(String(a.title||'').trim())?curFmt(a).name:a.title)}</b><small>🏆 ${w?esc(w.name):'–'} · ${(a.pairs||[]).length} teams${autoTitle(String(a.title||'').trim())?'':' · '+esc(curFmt(a).name)}</small></span><span class="w">${w?esc(w.val):''}</span></button>${isAdmin()?(()=>{const armed=Date.now()-(delArm[a.id]||0)<4000;return `<button class="del${armed?' armed':''}" data-del="${esc(a.id)}" type="button" aria-label="Delete the past round from ${esc(new Date(a.at).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}))}">${armed?'Delete?':'🗑'}</button>`})():''}</li>`}).join('')}</ul>${isAdmin()?`<p class="note" style="margin:10px 2px 0">Organiser: tap 🗑 twice to delete a past round for everyone.</p>`:''}`
     :`<div class="empty"><div class="ill">🗂</div><h2>No past rounds yet</h2><p>When a round finishes, the organiser archives it from <b>Setup</b> and it appears here.</p></div>`);
 }
 // teams that haven't entered all 9 holes yet (archiving waits for them)
@@ -2047,7 +2057,7 @@ async function shareImage(src){
   x.fillStyle='#fff';x.fillRect(86,86,6,92);x.fillStyle='#e63946';x.beginPath();x.moveTo(92,90);x.lineTo(150,112);x.lineTo(92,134);x.fill();
   x.fillStyle='#fff';x.font='700 76px "Barlow Condensed"';x.fillText(fit((s.fin?'FINAL RESULTS':'RESULTS SO FAR'),800,x.font),180,150);
   x.font='500 30px Inter';x.fillStyle='rgba(255,255,255,.85)';const d=src.at?new Date(src.at):new Date();
-  x.fillText(fit(`${RR.title||''} · ${RR.course||''}`,900,x.font),180,200);x.fillText(d.toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long',year:'numeric'}),180,244);
+  x.fillText(fit(`${rTitle(RR)} · ${curFmt(RR).name}`,900,x.font),180,200);x.fillText(d.toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long',year:'numeric'}),180,244);
   let y=320;list.slice(0,n).forEach(({rank,name,sub,val},i)=>{x.fillStyle=i===0?'#fff8e6':'#ffffff';x.beginPath();x.roundRect(70,y,940,88,22);x.fill();
     if(i===0){x.strokeStyle='#f4b740';x.lineWidth=5;x.stroke()}
     x.fillStyle=i===0?'#0e3b2c':'#e8f1ec';x.beginPath();x.roundRect(88,y+14,60,60,14);x.fill();x.fillStyle=i===0?'#fff':'#0e3b2c';x.font='700 44px "Barlow Condensed"';x.textAlign='center';x.fillText(String(rank),118,y+60);x.textAlign='left';
