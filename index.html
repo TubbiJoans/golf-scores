@@ -86,6 +86,7 @@ h3.rsec{font:700 18px "Barlow Condensed",system-ui,sans-serif;margin:14px 2px 8p
 .bdg{display:inline-block;border-radius:99px;background:var(--g);color:#fff;font:700 10px/1.6 Inter,system-ui,sans-serif;padding:0 7px;vertical-align:1px;letter-spacing:.3px}
 .bdg.cu{background:#fff;color:#6b4e00;box-shadow:inset 0 0 0 1px #f0d48a}
 /* Setup: today's format and the roller */
+#fmtp{scroll-margin-top:72px}
 .fcur{display:flex;gap:12px;align-items:center}
 .fcur .ic{font-size:30px;line-height:1;flex:none}
 .fcur>div{flex:1;min-width:0}.fcur b{display:block;font:700 22px/1.1 "Barlow Condensed",system-ui,sans-serif}
@@ -490,7 +491,7 @@ h2.sec{font:700 22px "Barlow Condensed",system-ui,sans-serif;margin:0 0 8px}
 const FG = window.FG = window.FG || {};
 
 const HOLES = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-const SLOTS = ['a', 'b', 'c'];
+const SLOTS = ['a', 'b', 'c', 'd', 'e'];
 const THIRDS = [[1, 2, 3], [4, 5, 6], [7, 8, 9]];
 const DEF_PAR = [4, 4, 5, 4, 5, 3, 4, 3, 4];
 const DEF_SI = [13, 1, 5, 15, 9, 11, 3, 17, 7];
@@ -597,21 +598,38 @@ const F = {
     how: 'The two teams in each group play a match with one ball each, alternate shots.',
     rules: ['Each side plays one ball, taking alternate shots.', 'The side with the lowest net score wins the hole.', 'The match ends when one side is more holes up than there are left.'],
     allow: { 2: ['50% of the difference between the sides’ combined handicaps', WHS] } },
-  skins: { name: 'Skins', short: 'Skins', icon: '💰', hue: 135, entry: 'ind', kind: 'skins', rank: 'team', mix: false, sizes: [2, 3], need: 'multi',
+  skins: { name: 'Skins', short: 'Skins', icon: '💰', hue: 135, entry: 'ind', kind: 'skins', rank: 'team', mix: false, sizes: [2, 3, 4, 5], need: 'multi',
     how: 'Every hole is worth a skin. Win the hole outright against the whole field to take it; ties carry over.',
     rules: ['Everyone plays their own ball; the team’s best net score counts.', 'The team with the best score on a hole, on its own, wins the skin.', 'If the best score is tied, the skin carries over to the next hole.', 'A hole is settled once every team has scored it.'],
-    allow: { 2: ['90% each player', CUS], 3: ['80% each player', CUS] } },
-  wolf: { name: 'Wolf', short: 'Wolf', icon: '🐺', hue: 215, entry: 'ind', kind: 'wolf', rank: 'player', mix: false, sizes: [2, 3], need: 'groups34',
+    allow: { 2: ['90% each player', CUS], 3: ['80% each player', CUS], 4: ['75% each player', CUS], 5: ['70% each player', CUS] } },
+  wolf: { name: 'Wolf', short: 'Wolf', icon: '🐺', hue: 215, entry: 'ind', kind: 'wolf', rank: 'player', mix: false, sizes: [2, 3, 4], need: 'groups34',
     how: 'A different player is the Wolf on each hole and picks a partner for the hole, or goes it alone.',
     rules: ['The Wolf rotates around the group, hole by hole.', 'After the tee shots the Wolf picks a partner, or plays as a Lone Wolf against the rest.', 'Best net ball wins the hole. Wolf and partner win: 2 points each. The others win: 3 points each.', 'Lone Wolf wins: 4 points. Lone Wolf loses: 1 point to each of the others. Ties score nothing.', 'The players’ board is individual. The team total adds the players’ points together.'],
-    allow: { 2: ['100% each player', CUS], 3: ['100% each player', CUS] } },
-  bbb: { name: 'Bingo Bango Bongo', short: 'Bingo Bango', icon: '🔔', hue: 60, entry: 'ind', kind: 'bbb', rank: 'player', mix: false, sizes: [2, 3],
+    allow: { 2: ['100% each player', CUS], 3: ['100% each player', CUS], 4: ['100% each player', CUS] } },
+  bbb: { name: 'Bingo Bango Bongo', short: 'Bingo Bango', icon: '🔔', hue: 60, entry: 'ind', kind: 'bbb', rank: 'player', mix: false, sizes: [2, 3, 4, 5],
     how: 'Three points on every hole: first on the green, closest to the pin, first in the hole.',
     rules: ['Bingo: the first player in the group to get their ball on the green.', 'Bango: the closest to the pin once every ball is on the green.', 'Bongo: the first player to hole out.', 'Always play in turn, furthest from the hole first. No handicaps needed.'],
-    allow: { 2: ['No handicap strokes', NONE], 3: ['No handicap strokes', NONE] } }
+    allow: { 2: ['No handicap strokes', NONE], 3: ['No handicap strokes', NONE], 4: ['No handicap strokes', NONE], 5: ['No handicap strokes', NONE] } },
+  // ---- teams of four (the draw makes teams of four for these; a field that doesn't split into fours leaves a team or two of three)
+  scr4: { name: '4-Person Scramble', short: '4-Scramble', icon: '🧷', hue: 195, entry: 'ball', ball: 'Team ball', kind: 'pts', count: 'ball', rank: 'team', mix: true, sizes: [2, 3, 4, 5], need: 'fours',
+    how: 'Teams of four. Everyone tees off, the team picks the best ball, and everyone plays the next shot from there, all the way in.',
+    rules: ['All four tee off and the team chooses the best ball.', 'Everyone plays the next shot from that spot, and so on until the ball is holed.', 'One score per hole, scored as Stableford.'],
+    allow: { 4: ['25% low, 20%, 15%, 10% high', WHS], 5: ['20% low, 15%, 10%, 10%, 5% high', CUS], 3: ['30% low, 20%, 10% high', WHS], 2: ['35% low + 15% high', WHS] } },
+  sh4: { name: '4-Person Shamble', short: '4-Shamble', icon: '🛫', hue: 40, entry: 'ind', kind: 'pts', count: 'best2', rank: 'team', mix: true, sizes: [2, 3, 4, 5], need: 'fours',
+    how: 'Teams of four. Everyone tees off, pick the best drive, then each plays their own ball in from there. The best two scores count.',
+    rules: ['All four tee off and the team chooses the best drive.', 'Everyone plays their own ball from that spot until it is holed.', 'The team’s best two Stableford scores count on each hole.'],
+    allow: { 4: ['75% each player', HSE], 5: ['70% each player', CUS], 3: ['75% each player', HSE], 2: ['75% each player', HSE] } },
+  b1of4: { name: 'Best Ball of 4', short: 'Best 1 of 4', icon: '🥇', hue: 50, entry: 'ind', kind: 'pts', count: 'best1', rank: 'team', mix: true, sizes: [2, 3, 4, 5], need: 'fours',
+    how: 'Teams of four. Everyone plays their own ball, and the best Stableford score in the team counts on each hole.',
+    rules: ['Everyone plays their own ball.', 'On each hole only the team’s best Stableford score counts.', 'Pick up once a team-mate has the hole covered.'],
+    allow: { 4: ['75% each player', WHS], 5: ['70% each player', CUS], 3: ['75% each player', CUS], 2: ['85% each player', WHS] } },
+  b2of4: { name: 'Best 2 of 4', short: 'Best 2 of 4', icon: '✌️', hue: 300, entry: 'ind', kind: 'pts', count: 'best2', rank: 'team', mix: true, sizes: [2, 3, 4, 5], need: 'fours',
+    how: 'Teams of four. Everyone plays their own ball, and the best two Stableford scores in the team count on each hole.',
+    rules: ['Everyone plays their own ball.', 'On each hole the team’s best two Stableford scores count.'],
+    allow: { 4: ['85% each player', WHS], 5: ['80% each player', CUS], 3: ['85% each player', CUS], 2: ['95% each player', CUS] } }
 };
 Object.keys(F).forEach(id => { F[id].id = id; });
-const ALL = ['house', 'stab', 'stroke', 'bb', 'shamble', 'greensomes', 'foursomes', 'chapman', 'scramble', 'gruesomes', 'mstab', 'parbogey', 'mp1', 'mp4', 'mpf', 'skins', 'wolf', 'bbb'];
+const ALL = ['house', 'stab', 'stroke', 'bb', 'shamble', 'greensomes', 'foursomes', 'chapman', 'scramble', 'gruesomes', 'mstab', 'parbogey', 'mp1', 'mp4', 'mpf', 'skins', 'wolf', 'bbb', 'scr4', 'sh4', 'b1of4', 'b2of4'];
 const MIXABLE = ALL.filter(id => F[id] && F[id].mix);
 const HOUSE = { id: 'house', name: 'Pairs 3-3-3', short: 'Pairs 3-3-3', icon: '🏠', hue: 160, parts: ['shamble', 'greensomes', 'scramble'],
   how: 'Our house format: holes 1-3 Shamble, holes 4-6 Greensomes, holes 7-9 Scramble. Stableford all the way.',
@@ -654,8 +672,13 @@ function handicaps(round, team, fid, group, byId) {
     case 'greensomes': case 'chapman': case 'gruesomes': return { t: n === 3 ? rnd(0.5 * s[0] + 0.3 * s[1] + 0.2 * s[2]) : rnd(0.6 * s[0] + 0.4 * s[1]) };
     case 'foursomes': return { t: rnd(sum(hs) / n) };
     case 'scramble': return { t: n === 3 ? rnd(0.3 * s[0] + 0.2 * s[1] + 0.1 * s[2]) : rnd(0.35 * s[0] + 0.15 * s[1]) };
-    case 'parbogey': case 'skins': return each(n === 3 ? 0.8 : 0.9);
+    case 'parbogey': return each(n === 3 ? 0.8 : 0.9);
+    case 'skins': return each(n === 5 ? 0.7 : n === 4 ? 0.75 : n === 3 ? 0.8 : 0.9);
     case 'wolf': return each(1);
+    case 'scr4': return { t: n === 5 ? rnd(0.2 * s[0] + 0.15 * s[1] + 0.1 * s[2] + 0.1 * s[3] + 0.05 * s[4]) : n === 4 ? rnd(0.25 * s[0] + 0.2 * s[1] + 0.15 * s[2] + 0.1 * s[3]) : n === 3 ? rnd(0.3 * s[0] + 0.2 * s[1] + 0.1 * s[2]) : rnd(0.35 * s[0] + 0.15 * s[1]) };
+    case 'sh4': return each(n === 5 ? 0.7 : 0.75);
+    case 'b1of4': return each(n === 5 ? 0.7 : n === 2 ? 0.85 : 0.75);
+    case 'b2of4': return each(n === 5 ? 0.8 : n === 2 ? 0.95 : 0.85);
     case 'bbb': return { p: hs.map(() => 0) };
   }
   // match play: strokes depend on the opponents in the group
@@ -672,10 +695,12 @@ function handicaps(round, team, fid, group, byId) {
 function suits(id, round) {
   const teams = (round && round.teams) || [];
   if (teams.length < 2) return { ok: false, why: 'Draw the teams first' };
-  if (teams.some(t => t.players.length < 2 || t.players.length > 3)) return { ok: false, why: 'Every team needs 2 or 3 players' };
+  if (teams.some(t => t.players.length < 2 || t.players.length > 5)) return { ok: false, why: 'Every team needs 2 to 5 players' };
   if (id === 'house') { for (const p of HOUSE.parts) { const r = suits(p, round); if (!r.ok) return r; } return { ok: true }; }
   const f = F[id]; if (!f) return { ok: false, why: 'Unknown format' };
-  if (teams.some(t => f.sizes.indexOf(t.players.length) < 0)) return { ok: false, why: 'Pairs only' };
+  const misfit = teams.find(t => f.sizes.indexOf(t.players.length) < 0);
+  if (misfit) return { ok: false, why: misfit.players.length === 4 ? 'Not for teams of four' : misfit.players.length === 5 ? 'Not for teams of five' : 'Pairs only' };
+  if (f.need === 'fours' && round.tsize !== 4 && !teams.some(t => t.players.length === 4)) return { ok: false, why: 'Teams of four only' };   // tsize 4: drawn as teams of four (5 players -> 3 + 2)
   if (f.need === 'evenPairs' && groupsOf(round).some(g => g.teams.length !== 2)) return { ok: false, why: 'Needs an even number of pairs' };
   if (f.need === 'groups34' && groupsOf(round).some(g => { const n = sum(g.teams.map(id2 => teams.find(t => t.id === id2).players.length)); return n < 3 || n > 4; })) return { ok: false, why: 'Needs groups of 3 or 4 players' };
   return { ok: true };
@@ -745,6 +770,7 @@ function compute(round, scores) {
       if (f.entry === 'ind' && single) H.rows.forEach((r, i) => { if (r.pts != null) { const p = P(t.id, i); p.total += r.pts; p.thru++; p.h[h] = r.pts; } });
       const got = H.rows.filter(r => r.pts != null); if (!got.length) return;      // points show as they come in; the hole is done once every score is in
       if (f.count === 'best1') { H.tv = Math.max.apply(null, got.map(r => r.pts)); let hit = false; got.forEach(r => { r.cnt = !hit && r.pts === H.tv; if (r.cnt) hit = true; }); }
+      else if (f.count === 'best2') { const keep = got.slice().sort((x, y) => y.pts - x.pts || (x.gross || 99) - (y.gross || 99)).slice(0, 2); got.forEach(r => { r.cnt = keep.indexOf(r) >= 0; }); H.tv = sum(keep.map(r => r.pts)); }
       else if (f.count !== 'ball' && H.all && got.length === 3 && three === 'best2') { const low = got.slice().sort((x, y) => x.pts - y.pts || (y.gross || 99) - (x.gross || 99))[0]; low.cnt = false; H.tv = sum(got.map(r => r.pts)) - low.pts; }
       else H.tv = sum(got.map(r => r.pts));
       H.done = H.all;
@@ -939,7 +965,7 @@ const pkey=p=>(p.n+' '+(p.l||'')).trim();                       // unique player
 let dEdit=false,dPick=null,drawSel=new Set(ls.get('gs-draw2',[])),draft=null,shareNext=false,sharedIds=null,dq='',dbal=false,useArmed=0;
 let P=ROSTER.map(([n,l,h])=>({n,l,h})),R=structuredClone(DEF),S={},user=null,view='board',fs=null,au=null,db=null,auth=null,setupDirty=false;
 let ready=false,live=false,resSrc=null,hist=null,lastPop=null;
-const LOCAL=!firebaseConfig,APPV=2;let FMD=null;   // FMD: the format as last chosen (rounds/format); APPV: bumped when older app versions must update
+const LOCAL=!firebaseConfig,APPV=3;let FMD=null;   // FMD: the format as last chosen (rounds/format); APPV: bumped when older app versions must update
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const buzz=()=>{try{navigator.vibrate&&navigator.vibrate(12)}catch{}};
 if(!CanvasRenderingContext2D.prototype.roundRect)CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){this.moveTo(x+r,y);this.arcTo(x+w,y,x+w,y+h,r);this.arcTo(x+w,y+h,x,y+h,r);this.arcTo(x,y+h,x,y,r);this.arcTo(x,y,x+w,y,r);this.closePath()};
@@ -953,11 +979,15 @@ const E=window.FG.Engine,F=E.F,SEGC=['var(--f0)','var(--f1)','var(--f2)'],GK=/(x
 const r1=x=>Math.sign(x)*Math.round(Math.abs(x));             // round half away from zero (plus handicaps round the same way)
 const fmtH=h=>{if(h===''||h==null)return '';const n=+h;return n<0?'+'+(-n):String(h)};
 const first=n=>String(n||'').split(' ')[0];
-const is3=p=>!!(p.p3&&String(p.p3).trim());
-const pn=(p,k)=>({a:p.p1,b:p.p2,c:p.p3}[k])||({a:'Player 1',b:'Player 2',c:'Player 3'}[k]);
-const teamName=p=>p.name||[p.p1||'Player 1',p.p2||'Player 2',...(is3(p)?[p.p3]:[])].join(' & ');
+const is3=p=>!!(p.p3&&String(p.p3).trim());   // a team of three or four
+const is4=p=>is3(p)&&!!(p.p4&&String(p.p4).trim());
+const is5=p=>is4(p)&&!!(p.p5&&String(p.p5).trim());
+const pn=(p,k)=>({a:p.p1,b:p.p2,c:p.p3,d:p.p4,e:p.p5}[k])||({a:'Player 1',b:'Player 2',c:'Player 3',d:'Player 4',e:'Player 5'}[k]);
+const teamName=p=>p.name||[p.p1||'Player 1',p.p2||'Player 2',...(is3(p)?[p.p3]:[]),...(is4(p)?[p.p4]:[]),...(is5(p)?[p.p5]:[])].join(' & ');
 // 1 birdie, 2 eagle, 3 hole in one, 4 albatross (a hole in one on a par 4 counts as the hole in one)
 const lvOf=(g,par)=>g===null||g===undefined||g<=0?0:g===1?3:g<=par-3?4:g===par-2?2:g===par-1?1:0;
+// today's format can't be played by today's teams (say a team of four in a pairs format): why, or null
+const fmtBadNow=()=>{const rr=calcIn(R,{});return rr.teams.length>=2?(curFmt().segs.map(x=>E.suits(x.f,rr)).find(r=>!r.ok)||null):null};
 const fmtOK=f=>{if(!f||typeof f.name!=='string'||typeof f.key!=='string'||!Array.isArray(f.segs)||!f.segs.every(s=>s&&typeof s.f==='string'&&Object.hasOwn(F,s.f)&&Array.isArray(s.holes)))return false;
   const hs=f.segs.flatMap(s=>s.holes);                           // one format over holes 1-9, or three points formats over 1-3, 4-6 and 7-9
   return hs.length===9&&hs.every((h,i)=>h===i+1)&&(f.segs.length===1||(f.segs.length===3&&f.segs.every((s,i)=>s.holes.length===3&&s.holes[0]===i*3+1&&F[s.f].mix)))};
@@ -970,8 +1000,8 @@ const segsOf=(RR=R)=>{const f=curFmt(RR);return f.segs.length>1?f.segs.map((s,i)
 function calcI(RR,SS){const ps=RR.pairs||[],real=ps.filter(x=>x.p1||x.p2);
   const groups=teeGroups(real,is3).map(g=>({teams:g.xs.map(x=>x.id),tee:g.hole}));ps.forEach(p=>{if(!real.includes(p))groups.push({teams:[p.id],tee:1})});
   const sc={};ps.forEach(p=>sc[p.id]={v:(SS&&SS[p.id])||{},t:{}});
-  return{round:{par:(RR.par||DEF.par).map(v=>+v||4),si:RR.si||DEF.si,format:curFmt(RR),three:RR.three,groups,
-    teams:ps.map(p=>({id:p.id,name:teamName(p),players:[{n:pn(p,'a'),h:p.h1},{n:pn(p,'b'),h:p.h2},...(is3(p)?[{n:pn(p,'c'),h:p.h3}]:[])]}))},sc}}
+  return{round:{par:(RR.par||DEF.par).map(v=>+v||4),si:RR.si||DEF.si,format:curFmt(RR),three:RR.three,tsize:RR.tsize,groups,
+    teams:ps.map(p=>({id:p.id,name:teamName(p),players:[{n:pn(p,'a'),h:p.h1},{n:pn(p,'b'),h:p.h2},...(is3(p)?[{n:pn(p,'c'),h:p.h3}]:[]),...(is4(p)?[{n:pn(p,'d'),h:p.h4}]:[]),...(is5(p)?[{n:pn(p,'e'),h:p.h5}]:[])]}))},sc}}
 const calc=(RR=R,SS=S)=>{const i=calcI(RR,SS);return E.compute(i.round,i.sc)},calcIn=(RR,SS)=>calcI(RR,SS).round;
 // one team's card, in the shape the screens draw. X = calc() when the caller already has it.
 function card(p,RR=R,SS=S,X){X=X||calc(RR,SS);const T=X.teams[p.id],k=X.kind,ptsK=k==='pts'||k==='mstab',sg=segsOf(RR);
@@ -983,8 +1013,8 @@ function card(p,RR=R,SS=S,X){X=X||calc(RR,SS);const T=X.teams[p.id],k=X.kind,pts
   let on=null;if(last){on=holes[last-1].all?null:last;if(!on){for(let i=0;i<9;i++){const hh=holes[(last+i)%9];if(!hh.all){on=hh.h;break}}}}
   let proj=null;                                               // too jumpy before 3 holes; fair whichever hole a team started on
   if(k==='pts'&&T.thru>=3&&T.thru<9){const fp=[0,0,0],fn=[0,0,0];holes.forEach(h=>{if(h.done){fp[h.f]+=h.hp;fn[h.f]++}});
-    proj=Math.round(holes.reduce((a,h)=>a+(h.done?h.hp:fn[h.f]?fp[h.f]/fn[h.f]:F[h.fid].count==='all'?4:2),0))}
-  return{T,k,tot:T.total,disp:T.disp,score:T.score,dir:k==='stroke'?-1:1,seg:T.thirds,thru:T.thru,holes,three:is3(p),on,proj,started:!!last||T.thru>0,fin:T.done,
+    proj=Math.round(holes.reduce((a,h)=>a+(h.done?h.hp:fn[h.f]?fp[h.f]/fn[h.f]:F[h.fid].count==='all'||F[h.fid].count==='best2'?4:2),0))}
+  return{T,k,tot:T.total,disp:T.disp,score:T.score,dir:k==='stroke'?-1:1,seg:T.thirds,thru:T.thru,holes,three:is3(p)&&!is4(p),on,proj,started:!!last||T.thru>0,fin:T.done,
     gets:i=>{const h=T.hc[sg[i].fid];return h?(h.p?h.p.map(fmtH).join(' / '):fmtH(h.t)):''},
     birdies:holes.reduce((a,h)=>a+h.e.filter(x=>x.bird&&!x.drop).length,0)}}
 function standings(RR=R,SS=S){
@@ -1016,7 +1046,7 @@ function noteChange(pid,key,g,mine){
   if(hot[pid]&&hot[pid].key===key&&hot[pid].lv>lv)delete hot[pid];
   uncheer(pid,key,lv);
   if(!e){saveFeed();return}
-  const nm=lv===3&&!/[abc]$/.test(key)?shotBy(p,S[pid]?.[h+'w']):null,who=/[abc]$/.test(key)?e.label+' ':nm?nm+' ':'',b=e.bird;   // a hole in one re-entered keeps whose shot it was
+  const nm=lv===3&&!/[a-e]$/.test(key)?shotBy(p,S[pid]?.[h+'w']):null,who=/[a-e]$/.test(key)?e.label+' ':nm?nm+' ':'',b=e.bird;   // a hole in one re-entered keeps whose shot it was
   feed.unshift({t:Date.now(),pid,key,b,lv,txt:`${teamName(p)}: ${who}${resWord(+g,hole.par)} on ${h}${e.pt==null?'':`, ${e.pt} pt${e.pt===1?'':'s'}`}`});
   feed=feed.slice(0,12);saveFeed();tickNew=Date.now();if(lv)hot[pid]={t:Date.now(),lv,key};if(lv&&(mine||live))queueCheer(pid,key,mine)}
 function whoSaid(pid,h,v){const p=R.pairs.find(x=>x.id===pid),nm=p&&shotBy(p,v);if(!nm)return;
@@ -1034,7 +1064,7 @@ function queueCheer(pid,key,mine){const ck=pid+'|'+key,q0=Date.now();clearTimeou
   if(!e||e.lv<1)return;
   if(document.hidden){if(e.lv>=2&&Date.now()-q0<90000)cheerT[ck]=setTimeout(fire,1500);return}   // app in the background: hold a big one until it's back, skip a birdie
   const id=sig()+'|'+ck+'|'+e.gross;if(cheered.has(id))return;cheered.add(id);
-  const at=fxOrigin(pid,key),solo=/[abc]$/.test(key);
+  const at=fxOrigin(pid,key),solo=/[a-e]$/.test(key);
   if(e.lv===1)birdie(ck,at);else if(e.lv===2)eagle(ck,at);
   else if(e.lv===3)holeInOne(ck,at,p,solo?e.label:shotBy(p,S[pid]?.[h+'w']),h,hole.par,mine&&!solo?pid:null);
   else albatross(ck,at)};
@@ -1175,7 +1205,7 @@ function albatross(ck,at){if(document.hidden)return;
     setTimeout(()=>{l.remove();b.classList.remove('laughing')},1400)});
   setTimeout(()=>{[b,e,A,dim].forEach(x=>x.remove());document.body.classList.remove('party')},TG+3100)}
 // whose shot went in on a team-ball hole: S[pid]['<hole>w'] = 1, 2 or 3 (player 1/2/3), set by the scorer on the celebration
-const shotBy=(p,v)=>v>=1&&v<=3?pn(p,'abc'[v-1]):null;
+const shotBy=(p,v)=>v>=1&&v<=5?pn(p,'abcde'[v-1]):null;
 // hole in one: the ball flies in, bounces, teases the rim and drops; the cup gulps, the flag jumps and twirls, fireworks, the words,
 // and the three birds loop the loop. On a team-ball hole the scorer's phone asks whose tee shot it was.
 function holeInOne(ck,at,p,name,h,par,askPid){if(document.hidden)return;
@@ -1216,7 +1246,7 @@ function holeInOne(ck,at,p,name,h,par,askPid){if(document.hidden)return;
   setTimeout(()=>{[hole,ball].forEach(x=>x.remove())},drop+5000);
   // "whose tee shot?" on the scorer's phone, under the words
   function ask(ms){if(!askPid||name)return;setTimeout(()=>{if(S[askPid]?.[h]!==1||!document.querySelector(`.acefx[data-ck="${CSS.escape(ck)}"]`)&&!reduce)return;
-    const q=sprite('whocard',ck,3,`<span>Whose tee shot?</span>${[...(is3(p)?'abc':'ab')].map((k,i)=>`<button type="button" data-who="${i+1}">${esc(pn(p,k))}</button>`).join('')}`);
+    const q=sprite('whocard',ck,3,`<span>Whose tee shot?</span>${[...(is5(p)?'abcde':is4(p)?'abcd':is3(p)?'abc':'ab')].map((k,i)=>`<button type="button" data-who="${i+1}">${esc(pn(p,k))}</button>`).join('')}`);
     q.style.top=(C.y+150<H?C.y+44:Math.max(top+10,ty-150))+'px';   // under the green (above the words if there's no room below)
     q.addEventListener('click',e=>{const b=e.target.closest('[data-who]');if(!b)return;q.remove();
       if(S[askPid]?.[h]!==1||myPair()!==askPid||teamOther(askPid))return;const v=+b.dataset.who;setWho(askPid,h+'w',v)});
@@ -1233,7 +1263,7 @@ function render(kind){loadFeed();
   else if(view==='hist')renderHist();
   else if(view==='ecl')renderEcl(kind);
   else if(kind!=='scores'&&!setupDirty){if(document.activeElement&&document.activeElement.matches('#v-setup input,#v-setup select'))setupStale=true;else renderSetup()}   // never redraw under the organiser's fingers…
-  else{updArch();applySetupLock()}                         // …but the archive lock and the round lock follow the scores live
+  else{updArch();applySetupLock();if(fsel.flow==='pick'&&!fsel.spin)fmtDraw()}                         // …but the archive lock and the round lock follow the scores live
 }
 function renderBoard(){
   const el=$('v-board');
@@ -1256,14 +1286,15 @@ function renderBoard(){
     const hon=ht&&now-ht.t<(ht.lv>=3?16000:ht.lv===2?9000:6000);
     return `<li data-id="${esc(p.id)}" class="${hon?['','hot','hot2','hot3','hot4'][ht.lv]:''}"${hon?` style="animation-delay:-${((now-ht.t)/1000).toFixed(2)}s"`:''}><details data-id="${esc(p.id)}" ${open.has(p.id)?'open':''}><summary>
       <span class="pos">${rank}${mv?`<i class="mv ${mv>0?'up':'dn'}">${mv>0?'▲':'▼'}${Math.abs(mv)}</i>`:''}</span>
-      <span class="who"><b>${esc(teamName(p))}</b><small>${hb?`<span class="bb e${hl}" style="animation-delay:-${((now-hb.t)/1000).toFixed(2)}s">${hl===4?'🕊\uFE0F ALBATROSS on':hl===3?'⛳ HOLE IN ONE on':hl===2?'🦅 Eagle on':'🐦 Birdie on'} ${parseInt(hb.key)}!</span>`:`${esc(p.p1||'')} ${esc(fmtH(p.h1))} · ${esc(p.p2||'')} ${esc(fmtH(p.h2))}${c.three?` · ${esc(p.p3)} ${esc(fmtH(p.h3))}`:''}`}</small></span>
+      <span class="who"><b>${esc(teamName(p))}</b><small>${hb?`<span class="bb e${hl}" style="animation-delay:-${((now-hb.t)/1000).toFixed(2)}s">${hl===4?'🕊\uFE0F ALBATROSS on':hl===3?'⛳ HOLE IN ONE on':hl===2?'🦅 Eagle on':'🐦 Birdie on'} ${parseInt(hb.key)}!</span>`:`${esc(p.p1||'')} ${esc(fmtH(p.h1))} · ${esc(p.p2||'')} ${esc(fmtH(p.h2))}${is3(p)?` · ${esc(p.p3)} ${esc(fmtH(p.h3))}`:''}${is4(p)?` · ${esc(p.p4)} ${esc(fmtH(p.h4))}`:''}${is5(p)?` · ${esc(p.p5)} ${esc(fmtH(p.h5))}`:''}`}</small></span>
       <span class="thru">${st}</span>
       <span class="pts">${esc(c.disp)}<small>${U}</small></span></summary>
       ${cardBody(c,X)}
     </details></li>`}).join('')}</ol>`;
   const players=()=>`<ol class="lb plb">${X.prows.map(q=>`<li data-id="${esc(q.ref)}"><div class="prw"><span class="pos">${q.pos}</span><span class="who"><b>${esc(q.name)}</b><small>${esc(q.team)}</small></span>
       <span class="thru"><b>${q.thru>=9?'Finished':q.thru?'Thru '+q.thru:'Not started'}</b>${k==='stroke'&&q.thru?`gross ${q.gross}`:''}</span><span class="pts">${esc(pdisp(X,q))}<small>${U}</small></span></div></li>`).join('')}</ol>`;
-  el.innerHTML=fban()+win+ticker+boardExtras(X)+(X.byPlayer?`<div class="segc" role="tablist"><button type="button" data-bv="p" class="${byP?'on':''}">Players</button><button type="button" data-bv="t" class="${byP?'':'on'}">Teams</button></div>`:'')+(byP?players():teams())+
+  const bad=fmtBadNow(),badBox=bad?`<div class="slock busy" role="status"><b>⏸ Format doesn’t suit today’s teams</b>${esc(curFmt().name)}: ${esc(bad.why.toLowerCase())}. Scoring waits until the organiser chooses another format.</div>`:'';
+  el.innerHTML=fban()+badBox+win+ticker+boardExtras(X)+(X.byPlayer?`<div class="segc" role="tablist"><button type="button" data-bv="p" class="${byP?'on':''}">Players</button><button type="button" data-bv="t" class="${byP?'':'on'}">Teams</button></div>`:'')+(byP?players():teams())+
     `<div class="marks"${byP?' hidden':''} aria-label="Scorecard marks"><span><i></i>Birdie</span><span><i class="eg"></i>Eagle</span><span><i class="alb"></i>Albatross</span><span><i class="ace"></i>Hole in one</span></div>${moreBtns()}`;
   if(!reduce)el.querySelectorAll('.lb li').forEach(li=>{const b=before[li.dataset.id];if(b==null)return;const d=b-li.getBoundingClientRect().top;
     if(Math.abs(d)>2)li.animate([{transform:`translateY(${d}px)`},{transform:'none'}],{duration:650,easing:'cubic-bezier(.2,.8,.2,1)'})});
@@ -1293,7 +1324,7 @@ function boardExtras(X){
   return ''}
 // the rules card: how the format works, its handicap allowance, and what everyone plays off today
 const BADGE={WHS:'WHS',Custom:'Our rule',House:'House rule'};
-function allowHTML(fid){const f=F[fid];return `<div class="al">${[2,3].map(n=>{const a=f.allow[n];return `<div><b>${n===2?'Pairs':'Teams of three'}:</b> ${a?esc(a[0])+(BADGE[a[1]]?` <span class="bdg ${a[1]==='WHS'?'':'cu'}">${BADGE[a[1]]}</span>`:''):'not played in this format'}</div>`}).join('')}${(f.count==='all')&&f.sizes.includes(3)?`<div><b>Team of three:</b> ${R.three==='all'?'all three scores count':'the best two scores on each hole count'}</div>`:''}</div>`}
+function allowHTML(fid){const f=F[fid];return `<div class="al">${[2,3,4,5].filter(n=>n<4||f.allow[n]).map(n=>{const a=f.allow[n];return `<div><b>${['','','Pairs','Teams of three','Teams of four','Teams of five'][n]}:</b> ${a?esc(a[0])+(BADGE[a[1]]?` <span class="bdg ${a[1]==='WHS'?'':'cu'}">${BADGE[a[1]]}</span>`:''):'not played in this format'}</div>`}).join('')}${(f.count==='all')&&f.sizes.includes(3)?`<div><b>Team of three:</b> ${R.three==='all'?'all three scores count':'the best two scores on each hole count'}</div>`:''}</div>`}
 function openRules(f=curFmt()){const one=f.segs.length===1,X=E.compute({...calcIn(R,{}),format:f},{}),li=i=>`<ul>${i.rules.map(r=>`<li>${esc(r)}</li>`).join('')}</ul>`;let h;
   if(one){const i=F[f.segs[0].f];h=`<h2>${i.icon} ${esc(i.name)}</h2><p class="note" style="margin:0">${esc(i.how)}</p>${li(i)}${allowHTML(i.id)}`}
   else h=`<h2>${fmtIcon(f)} ${esc(f.name)}</h2><p class="note" style="margin:0">${f.key==='house'?'Our house format: three holes of each. Stableford all the way.':'Three formats, three holes each. Stableford points all the way, so the three parts add up.'}</p>`+
@@ -1378,6 +1409,7 @@ function renderScore(){
   const el=$('v-score');
   if(!user){el.innerHTML=pinForm('Enter the scorer PIN to record scores. Anyone can view the leaderboard without it.');return}
   if(!R.pairs.length){el.innerHTML=`<div class="empty"><div class="ill">📝</div><h2>No pairs yet</h2><p>Wait for the organiser to draw the teams in <b>Setup</b>, then pick your pair here.</p></div>`;return}
+  {const bad=fmtBadNow();if(bad){el.innerHTML=`<div class="slock busy" role="status"><b>⏸ Scoring is paused</b>${esc(curFmt().name)} can’t be played with today’s teams (${esc(bad.why.toLowerCase())}). The organiser needs to choose another format in Setup.</div>`;return}}
   if(want&&!R.pairs.some(x=>x.id===want))want=null;
   const mine=myPair(),had=pairGet(),shown=want||mine;
   const sel=`<label for="pairsel">Scoring for</label><select id="pairsel" class="${mine&&!want?'':'need'}">${shown?'':`<option value="" selected disabled>Choose your pair…</option>`}${R.pairs.map(x=>`<option value="${esc(x.id)}" ${x.id===shown?'selected':''}>${esc(teamName(x))}${x.id!==mine&&teamOther(x.id)?' · on another phone':''}</option>`).join('')}</select>`;
@@ -1422,15 +1454,19 @@ function groupExtras(X,c,h){const k=X.kind,g=c.T.group;if(!g||(k!=='wolf'&&k!=='
 // ---------- today's format: roll one, roll a 3-3-3 mix, or pick by hand ----------
 // Lives in Setup. The roll only offers formats that suit the teams saved for today, skips the ones the organiser took out of the hat,
 // and lets last time's format sit out when there is a choice. "Use this format" saves it with the round, so every phone scores it.
-const fsel={mode:'single',res:null,spin:false,busy:false,note:'',mix:['','',''],ex:ls.get('gs-roll-ex',[]),open:false,poolOpen:false,pool:null,arm:0};let lastFmtKey;
+const fsel={flow:null,mode:'single',res:null,spin:false,busy:false,note:'',mix:['','',''],ex:ls.get('gs-roll-ex',[]),open:false,poolOpen:false,pool:null,arm:0};let lastFmtKey;
 const keyName=k=>!k?'':k.startsWith('mix:')?E.partsOfKey(k).map(id=>F[id]?F[id].short:id).join(' + '):(E.info(k)||{}).name||'';
+const fmtMsg=f=>`🎲 Format: *${f.name}*\n`+(f.segs.length>1?f.segs.map(x=>`• Holes ${x.holes[0]}–${x.holes[x.holes.length-1]}: *${F[x.f].name}*. ${F[x.f].how}`).join('\n'):F[f.segs[0].f].how)+'\n';   // for the WhatsApp teams message
 const fmtLine=f=>f.segs.length>1?f.segs.map(s=>`${s.holes[0]}–${s.holes[s.holes.length-1]} ${F[s.f].short}`).join(' · '):F[f.segs[0].f].how;
 const riHTML=id=>{const i=E.info(id);return `<div class="ri"><i>${i.icon}</i><b>${esc(i.short)}</b></div>`};
 let lastP=null;function fmtLast(){if(lastFmtKey!==undefined)return lastP;lastFmtKey=null;                // what was played last time, from Past rounds
   return lastP=loadHist().then(h=>{const a=h[0];lastFmtKey=a?(fmtOK(a.fmt)?a.fmt.key:'house'):null;if(lastFmtKey&&!fsel.spin)fmtDraw()}).catch(()=>{})}
 function fmtHtml(){const f=curFmt(),rr=calcIn(R,{}),n=rr.teams.length,bad=n>=2&&f.segs.map(s=>E.suits(s.f,rr)).find(r=>!r.ok);
   if(fsel.res&&!fsel.spin&&fsel.res.segs.some(x=>!E.suits(x.f,rr).ok))fsel.res=null;const res=fsel.res;   // picked before the teams changed
-  let h=`<div class="fcur"><span class="ic">${fmtIcon(f)}</span><div><b>${esc(f.name)}</b><small>${esc(fmtLine(f))}</small></div><button class="btn ghost" type="button" data-rules>Rules</button></div>`;
+  const fmtLockedNow=roundLive()&&!lockOvr,step=sharedIds&&sharedIds===pairIds()?(fsel.flow==='pick'&&fmtLockedNow?'share':fsel.flow):null;let h='';   // once scores start, the format is locked: skip to sharing
+  if(step==='pick')h+=`<div class="slock open" role="status"><b>✓ Teams saved. Next, today’s format</b>${n<2?'Keep the format for now':`Roll for it or choose one below${bad?'.':`, or keep ${esc(f.name)}.`}`}${bad?'':`<button class="btn ghost" id="fkeep" type="button">Keep ${esc(f.name)}</button>`}</div>`;
+  if(step==='share')h+=`<div class="shareok slock" role="status"><p>✓ Teams and format saved. Send them to the group:</p><div class="row"><a class="btn wa" id="dshare" href="#" target="_blank" rel="noopener">Share on WhatsApp</a><a class="btn ghost copy" id="dcopy" href="#" role="button" style="flex:0 0 auto">Copy</a></div></div>`;
+  h+=`<div class="fcur"><span class="ic">${fmtIcon(f)}</span><div><b>${esc(f.name)}</b><small>${esc(fmtLine(f))}</small></div><button class="btn ghost" type="button" data-rules>Rules</button></div>`;
   if(bad)h+=`<p class="note warn">This format doesn’t suit today’s teams (${esc(bad.why.toLowerCase())}). Choose another one below.</p>`;
   h+=`<details class="fch" id="fchg"${fsel.open?' open':''}><summary>🎲 Roll or choose today’s format</summary>`;
   if(n<2)return h+`<p class="note" style="margin-top:0">Add at least two teams and tap Save setup first. The roll only offers formats that suit today’s teams.</p></details>`;
@@ -1468,6 +1504,7 @@ function fmtClick(t){
       const r=E.roll(calcIn(R,{}),fsel.mode,fsel.ex,lastFmtKey||null,()=>rnd(1e6)/1e6);if(r.error){toast(r.error,3600);return}
       Object.assign(fsel,{res:r.format,pool:r.pool,spin:true,arm:0,note:r.avoided?`Last time was ${keyName(r.avoided)}, so it sat this one out.`:''});buzz();fmtDraw(true);fmtSpin()});return true}
   if(t.id==='frules'&&fsel.res){openRules(fsel.res);return true}
+  if(t.id==='fkeep'){Object.assign(fsel,{flow:'share',open:false,res:null,note:''});fmtDraw();buzz();return true}
   if(t.id==='flock'&&fsel.res){fmtLock(t);return true}
   return false}
 async function fmtLock(btn){let f=fsel.res;if(!f||fsel.spin||!setupWriteOk())return;
@@ -1479,7 +1516,8 @@ async function fmtLock(btn){let f=fsel.res;if(!f||fsel.spin||!setupWriteOk())ret
   // the round's title follows the format, unless the organiser gave it a title of their own
   try{btn.disabled=true;const fm={mode:f.mode,key:f.key,name:f.name,segs:f.segs,at:Date.now()},data={...R,title:rTitle(),fmt:fm};   // choosing a format never renames the round
     if(LOCAL)await saveRound(data);else{const b=fs.writeBatch(db);b.set(fs.doc(db,'rounds','current'),data);b.set(fs.doc(db,'rounds','format'),{fmt:fm,appv:APPV});await b.commit()}
-    Object.assign(fsel,{res:null,note:'',open:false,arm:0});toast(`${f.name} it is. Every phone now scores this format.`,3500);if(view==='setup'&&!setupDirty)renderSetup()}
+    Object.assign(fsel,{res:null,note:'',open:false,arm:0,flow:fsel.flow==='pick'&&sharedIds===pairIds()?'share':fsel.flow});toast(`${f.name} it is. Every phone now scores this format.`,3500);if(view==='setup'&&!setupDirty)renderSetup();else fmtDraw();
+    if(fsel.flow==='share')$('fmtp')?.scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'})}
   catch(err){toast('Not saved: '+(err.code||err.message))}finally{btn.disabled=false}}
 
 // ---------- Eclectic: the winter-long competition ----------
@@ -1635,12 +1673,13 @@ function renderSetup(){
       <div id="wlres">${wlHtml()}</div></details>
     <div class="row" style="margin-top:8px"><input id="dsearch" placeholder="Search players" autocomplete="off" value="${esc(dq)}" style="flex:2 1 160px"><button class="btn ghost" id="dall" type="button" style="flex:0 0 auto">All</button><button class="btn ghost" id="dnone" type="button" style="flex:0 0 auto">None</button></div>
     <div class="dlist" id="dlist">${dlistHtml()}</div>
-    <label class="chk" style="background:none;padding:0"><input type="checkbox" id="dbal" ${dbal?'checked':''}><span>Balance by handicap<small>Each pair gets a lower and a higher handicap, with the pair totals kept even</small></span></label>
-    <button class="btn" id="ddraw" type="button" style="width:100%;margin-top:8px">Draw pairs (<span id="dcount">${drawSel.size}</span> playing)</button>
+    <label class="chk" style="background:none;padding:0"><input type="checkbox" id="dbal" ${dbal?'checked':''}><span>Balance by handicap<small>Spreads the handicaps so the teams come out even</small></span></label>
+    <div class="segc" id="dsize" style="margin:8px 0 0"><button type="button" data-dsize="2" class="${dsz()===2?'on':''}">Pairs</button><button type="button" data-dsize="4" class="${dsz()===4?'on':''}">Teams of 4</button></div>
+    <button class="btn" id="ddraw" type="button" style="width:100%;margin-top:8px"><span id="dwhat">${dsz()===4?'Draw teams of 4':'Draw pairs'}</span> (<span id="dcount">${drawSel.size}</span> playing)</button>
     <div id="dres" class="dres"></div></div>
   <div class="panel"><h2 class="sec">Pairs</h2><p class="note" style="margin:0">Tap a player box to pick from the players list, or start typing to narrow it. Their handicap fills in automatically. A guest who isn't on the list: just type their name and handicap. Use normal 18-hole handicaps; the app halves them for 9 holes and applies each format's %. Plus handicaps: type +2 (or −2).</p>
     <div id="pairs">${R.pairs.map(pairRow).join('')}</div>
-    <button class="btn ghost" id="addp" type="button" style="width:100%;margin-top:6px">+ Add pair</button>
+    <div class="row" style="margin-top:6px"><button class="btn ghost" id="addp" type="button">+ Add pair</button>${R.pairs.length?`<a class="btn warn" id="pclear" href="#" role="button" style="display:flex;align-items:center;justify-content:center;text-decoration:none">Remove all pairs</a>`:''}</div>
     <div class="row" style="margin-top:8px"><a class="btn wa" id="pshare" href="#" target="_blank" rel="noopener">Share teams on WhatsApp</a><a class="btn ghost copy" id="pcopy" href="#" role="button" style="flex:0 0 auto">Copy</a></div></div>
   <div class="panel" id="fmtp"><h2 class="sec">Format</h2><div id="fmtbox">${(fsel.spin=false,fsel.busy=false,fmtHtml())}</div></div></fieldset>
   <fieldset class="lk" id="lk-players"><details class="panel"><summary class="sec" style="cursor:pointer">Players &amp; handicaps (${P.length})</summary>
@@ -1756,7 +1795,11 @@ const pairRow=p=>`<div class="pair" data-id="${esc(p.id)}"${Number.isInteger(p.t
   <div class="full"><input data-f="name" placeholder="Team name (optional)" value="${esc(p.name||'')}"><button class="x" type="button" data-rm aria-label="Remove pair">×</button></div>
   <input data-f="p1" autocomplete="off" autocapitalize="words" enterkeyhint="next" placeholder="Player 1 (tap to pick)" value="${esc(p.p1||'')}"><input data-f="h1" inputmode="decimal" placeholder="H'cap" value="${esc(fmtH(p.h1))}">
   <input data-f="p2" autocomplete="off" autocapitalize="words" enterkeyhint="next" placeholder="Player 2 (tap to pick)" value="${esc(p.p2||'')}"><input data-f="h2" inputmode="decimal" placeholder="H'cap" value="${esc(fmtH(p.h2))}">
-  ${p.p3?p3Inputs(p):`<button class="btn ghost add3" type="button" data-add3 style="grid-column:1/-1;min-height:40px;padding:6px">+ 3rd player (odd numbers)</button>`}</div>`;
+  ${p.p3?p3Inputs(p)+(p.p4?p4Inputs(p)+(p.p5?p5Inputs(p):add5Btn):add4Btn):`<button class="btn ghost add3" type="button" data-add3 style="grid-column:1/-1;min-height:44px;padding:6px">+ 3rd player (odd numbers)</button>`}</div>`;
+const add4Btn=`<button class="btn ghost add3" type="button" data-add4 style="grid-column:1/-1;min-height:44px;padding:6px">+ 4th player (teams of four)</button>`;
+const add5Btn=`<button class="btn ghost add3" type="button" data-add5 style="grid-column:1/-1;min-height:44px;padding:6px">+ 5th player</button>`;
+const p5Inputs=p=>`<input data-f="p5" autocomplete="off" autocapitalize="words" enterkeyhint="next" placeholder="Player 5 (tap to pick)" value="${esc(p.p5||'')}"><input data-f="h5" inputmode="decimal" placeholder="H'cap" value="${esc(fmtH(p.h5))}">`;
+const p4Inputs=p=>`<input data-f="p4" autocomplete="off" autocapitalize="words" enterkeyhint="next" placeholder="Player 4 (tap to pick)" value="${esc(p.p4||'')}"><input data-f="h4" inputmode="decimal" placeholder="H'cap" value="${esc(fmtH(p.h4))}">`;
 const p3Inputs=p=>`<input data-f="p3" autocomplete="off" autocapitalize="words" enterkeyhint="next" placeholder="Player 3 (tap to pick)" value="${esc(p.p3||'')}"><input data-f="h3" inputmode="decimal" placeholder="H'cap" value="${esc(fmtH(p.h3))}">`;
 const newId=()=>Date.now().toString(36).slice(-4)+Math.random().toString(36).slice(2,7);
 // ---------- player suggestions for the pair name boxes ----------
@@ -1769,7 +1812,7 @@ function sugOpen(inp){sugFor=inp;if(!sugEl){sugEl=document.createElement('div');
   sugDraw();setTimeout(()=>{if(sugFor===inp){inp.scrollIntoView({block:'start',behavior:reduce?'auto':'smooth'});setTimeout(sugDraw,350)}},350)}   // once the keyboard is up
 function sugDraw(){if(!sugEl||!sugFor)return;if(!sugFor.isConnected)return sugClose();
   const cur=findP(sugFor.value),q=cur?'':sugFor.value.trim().toLowerCase();
-  const used=new Set([...document.querySelectorAll('#pairs [data-f=p1],#pairs [data-f=p2],#pairs [data-f=p3]')].filter(i=>i!==sugFor).map(i=>i.value.trim().toLowerCase()).filter(Boolean));
+  const used=new Set([...document.querySelectorAll('#pairs [data-f=p1],#pairs [data-f=p2],#pairs [data-f=p3],#pairs [data-f=p4],#pairs [data-f=p5]')].filter(i=>i!==sugFor).map(i=>i.value.trim().toLowerCase()).filter(Boolean));
   const list=[...P].sort((a,b)=>a.n.localeCompare(b.n)||(a.l||'').localeCompare(b.l||'')).filter(p=>!q||pkey(p).toLowerCase().includes(q));
   sugEl.innerHTML=list.length?list.map(p=>{const u=used.has(sugName(p).toLowerCase());return `<button type="button" role="option" data-sug="${esc(pkey(p))}"${p===cur?' class="on"':''}${u?' style="opacity:.45"':''}><span>${esc(p.n)} ${esc(p.l||'')}${u?' <small>(in a pair)</small>':''}</span><small>${esc(fmtH(p.h))}</small></button>`}).join('')
     :`<div class="none">No player called “${esc(sugFor.value.trim())}”. Keep typing to add them as a guest, then enter their handicap.</div>`;
@@ -1784,7 +1827,7 @@ function sugPick(key){const inp=sugFor,p=P.find(x=>pkey(x)===key);if(!inp||!p||!
 document.addEventListener('toggle',e=>{const t=e.target;if(t.id==='wl')wl.open=t.open;else if(t.id==='fpoold')fsel.poolOpen=t.open;else if(t.id==='fchg'){fsel.open=t.open;if(t.open)fmtLast()}},true);
 document.addEventListener('paste',e=>{if(e.target.id==='wltext')setTimeout(()=>{wl.text=e.target.value;wlRun()},0)});
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.matches&&e.target.matches('[data-wlh]')){e.preventDefault();wlAdd(e.target.dataset.wlh,document.querySelector(`[data-wladd="${e.target.dataset.wlh}"]`))}});
-document.addEventListener('focusin',e=>{const t=e.target;if(t.matches&&t.matches('#pairs [data-f=p1],#pairs [data-f=p2],#pairs [data-f=p3]'))sugOpen(t);else if(!(sugEl&&sugEl.contains(t)))sugClose()});
+document.addEventListener('focusin',e=>{const t=e.target;if(t.matches&&t.matches('#pairs [data-f=p1],#pairs [data-f=p2],#pairs [data-f=p3],#pairs [data-f=p4],#pairs [data-f=p5]'))sugOpen(t);else if(!(sugEl&&sugEl.contains(t)))sugClose()});
 // …but catch up with changes from another phone as soon as they leave the box (unless they have unsaved edits of their own)
 let setupStale=false;
 document.addEventListener('focusout',e=>{if(!setupStale||!e.target.matches||!e.target.matches('#v-setup input,#v-setup select'))return;
@@ -1936,7 +1979,24 @@ function balancedPairs(players){const s=shuffle(players).sort((a,b)=>hcp(a)-hcp(
   const pick=pool[rnd(pool.length)];let pairs=shuffle(pick.pr.map(pr=>shuffle(pr)));
   if(mid){const k=pairs.reduce((bi,pr,i)=>sum(pr)>sum(pairs[bi])?i:bi,0);pairs[k].push(mid);mid=null}
   return{pairs,left:mid}}
+// teams of four: fours, with spares making a five (or a three), dealt like cards; with "balance"
+// the average handicap of every team is then evened out
+function drawFours(chosen,bal){const N=chosen.length,order=bal?shuffle(chosen).sort((a,b)=>hcp(a)-hcp(b)):shuffle(chosen);
+  // fours, and the players left over join a team to make a five (a 2 would be up against it in a four-person format):
+  // 13 -> 4+4+5, 9 -> 4+5, 10 -> 5+5, 14 -> 4+5+5, 7 -> 4+3, 11 -> 4+4+3; too few for that: 5 -> 3+2, 6 -> 3+3
+  const split=n=>{const q=Math.floor(n/4),r=n%4;
+    return r===0?Array(q).fill(4):r===3?[...Array(q).fill(4),3]:r===1?(q>=2?[...Array(q-1).fill(4),5]:[3,2]):(q>=2?[...Array(q-2).fill(4),5,5]:[3,3])};
+  const size=split(N);
+  const k=size.length,teams=[...Array(k)].map(()=>[]);let i=0;
+  for(let r=0;i<N;r++)for(let j=0;j<k&&i<N;j++){const t=r%2?k-1-j:j;if(teams[t].length<size[t])teams[t].push(order[i++])}   // dealt like cards
+  if(bal&&k>1){const avg=t=>t.reduce((a,x)=>a+hcp(x),0)/t.length,spread=()=>{const v=teams.map(avg);return Math.max(...v)-Math.min(...v)};let best=spread();   // then even out the average handicap per team
+    for(let n=0;n<4000;n++){const a=Math.random()*k|0,b=Math.random()*k|0;if(a===b)continue;const i=Math.random()*teams[a].length|0,j=Math.random()*teams[b].length|0;
+      [teams[a][i],teams[b][j]]=[teams[b][j],teams[a][i]];const sp=spread();if(sp<=best)best=sp;else[teams[a][i],teams[b][j]]=[teams[b][j],teams[a][i]]}}
+  return{pairs:shuffle(teams.map(t=>shuffle(t))),left:null}}
+// the team size the draw makes: what the organiser picked, otherwise what today's format needs
+let dsizeSet=null,tsizeNext=null;const dsz=()=>dsizeSet||(R.tsize===4||curFmt().segs.some(x=>F[x.f].need==='fours')?4:2);   // tsizeNext: the size the draw being used was made with
 function drawPairs(bal){const chosen=P.filter(p=>drawSel.has(pkey(p)));
+  if(dsz()===4)return drawFours(chosen,bal);
   if(bal)return balancedPairs(chosen);
   let pl=shuffle(chosen),left=null;if(pl.length%2)left=pl.pop();
   const pairs=[];for(let i=0;i<pl.length;i+=2)pairs.push([pl[i],pl[i+1]]);
@@ -1962,22 +2022,23 @@ const fmtTime=t=>{const m=/^(\d{1,2}):(\d{2})/.exec(t||'');if(!m)return '';const
 function teamsMsg(teams){
   const who=t=>{const x=t.ps.map(p=>p.n+(p.h!==''&&p.h!=null?` (${fmtH(p.h)})`:''));return x.length>2?x.slice(0,-1).join(', ')+' & '+x[x.length-1]:x.join(' & ')};
   const nm=t=>t.name.replace(/[*_~`]/g,'').trim();
-  return `⛳ ${rTitle()}${R.course?' · '+R.course:''}\n${fmtTime(R.time)?`🕖 Tee-off: *${fmtTime(R.time)}*\n`:''}${(f=>`🎲 Format: *${f.name}*\n${fmtLine(f)}\n`)(curFmt())}Teams and starting holes:\n\n`+
+  return `⛳ ${rTitle()}${R.course?' · '+R.course:''}\n${fmtTime(R.time)?`🕖 Tee-off: *${fmtTime(R.time)}*\n`:''}${fmtMsg(curFmt())}\nTeams and starting holes:\n\n`+
     teeGroups(teams,t=>t.ps.length>2).map(g=>`*Hole ${g.hole}*${g.second?' (2nd group)':''}\n`+g.xs.map(t=>`${t.num}. ${nm(t)?`*${nm(t)}*: `:''}${who(t)}`).join('\n')).join('\n\n')+
     `\n\nLive scores: ${appUrl()}`}
-const savedTeams=()=>R.pairs.filter(p=>p.p1||p.p2).map((p,i)=>({num:i+1,tg:p.tg,name:p.name||'',ps:[{n:p.p1||'Player 1',h:p.h1},{n:p.p2||'Player 2',h:p.h2},...(p.p3?[{n:p.p3,h:p.h3}]:[])]}));
+const savedTeams=()=>R.pairs.filter(p=>p.p1||p.p2).map((p,i)=>({num:i+1,tg:p.tg,name:p.name||'',ps:[{n:p.p1||'Player 1',h:p.h1},{n:p.p2||'Player 2',h:p.h2},...(p.p3?[{n:p.p3,h:p.h3}]:[]),...(p.p3&&p.p4?[{n:p.p4,h:p.h4}]:[]),...(p.p3&&p.p4&&p.p5?[{n:p.p5,h:p.h5}]:[])]}));
 const pairIds=()=>R.pairs.map(p=>p.id).join();
 const waUrl=txt=>'https://wa.me/?text='+encodeURIComponent(txt);
 async function copyTeams(txt){try{await navigator.clipboard.writeText(txt);toast('Teams copied. Paste them into the WhatsApp group.',3500)}catch{toast('Could not copy. Use Share on WhatsApp instead.')}}
 function drawName(x,all){return sugName(x)}
 function showDraft(){const el=$('dres');if(!el)return;
-  if(!draft){el.innerHTML=sharedIds&&sharedIds===pairIds()?`<div class="shareok"><p>✓ Teams saved. Send them to the group:</p><div class="row"><a class="btn wa" id="dshare" href="#" target="_blank" rel="noopener">Share on WhatsApp</a><a class="btn ghost copy" id="dcopy" href="#" role="button">Copy teams</a></div></div>`:'';return}
+  if(!draft){el.innerHTML='';const b=$('fmtbox');if(b&&fsel.flow&&!fsel.spin)b.innerHTML=fmtHtml();return}   // the next steps (format, then share) are in the Format panel
   const tot=pr=>fmtH(Math.round(pr.reduce((a,x)=>a+(+x.h||0),0)*10)/10);
   el.innerHTML=draft.pairs.map((pr,i)=>dEdit
-    ?`<div class="dpair"><div class="hd"><b>${pr.length===3?'Three':'Pair'} ${i+1}</b><span class="note" style="margin:0">total ${tot(pr)}</span></div><div class="chips">${pr.map((x,k)=>`<button type="button" class="dchip${dPick&&dPick[0]===i&&dPick[1]===k?' on':''}${draft.sw&&draft.sw.includes(i+':'+k)?' sw':''}" data-sw="${i}:${k}">${esc(x.n)}<small>${esc(fmtH(x.h))}</small></button>`).join('')}</div></div>`
-    :`<div><span><b>${pr.length===3?'Three':'Pair'} ${i+1}</b> &nbsp;${pr.map(x=>esc(x.n)).join(' &amp; ')}</span><span class="note" style="margin:0">${pr.map(x=>esc(fmtH(x.h))).join(' · ')}${pr.length>1?` <b style="font:600 13px Inter,system-ui,sans-serif">(${tot(pr)})</b>`:''}</span></div>`).join('')+
+    ?`<div class="dpair"><div class="hd"><b>${['','','Pair','Three','Four','Five'][pr.length]||'Team'} ${i+1}</b><span class="note" style="margin:0">total ${tot(pr)}</span></div><div class="chips">${pr.map((x,k)=>`<button type="button" class="dchip${dPick&&dPick[0]===i&&dPick[1]===k?' on':''}${draft.sw&&draft.sw.includes(i+':'+k)?' sw':''}" data-sw="${i}:${k}">${esc(x.n)}<small>${esc(fmtH(x.h))}</small></button>`).join('')}</div></div>`
+    :`<div><span><b>${['','','Pair','Three','Four','Five'][pr.length]||'Team'} ${i+1}</b> &nbsp;${pr.map(x=>esc(x.n)).join(' &amp; ')}</span><span class="note" style="margin:0">${pr.map(x=>esc(fmtH(x.h))).join(' · ')}${pr.length>1?` <b style="font:600 13px Inter,system-ui,sans-serif">(${tot(pr)})</b>`:''}</span></div>`).join('')+
   `<label class="chk"><input type="checkbox" id="dedit" ${dEdit?'checked':''}><span>Change pairs by hand<small>${dEdit?(dPick?`Now tap who ${esc(draft.pairs[dPick[0]][dPick[1]].n)} swaps with`:'Tap a player, then tap who they swap with'):'Swap players between pairs before you use them'}</small></span></label>`+
-  (draft.pairs.some(pr=>pr.length===3)?`<p class="note">Odd number, so one team of three. ${curFmt().key==='house'?'They count the best 2 of 3 scores on holes 1–3, with adjusted Greensomes and Scramble handicaps.':'Where every player’s score counts, they count their best 2 of 3 on each hole.'}</p>`:'')+
+  (draft.size===4&&draft.pairs.some(pr=>pr.length!==4)?`<p class="note">The numbers don’t split into fours, so ${draft.pairs.some(pr=>pr.length===5)?'the spare players make a team of five':'some teams are smaller'}. Each team plays off the allowances for its size.</p>`:'')+
+  (draft.size!==4&&draft.pairs.some(pr=>pr.length===3)?`<p class="note">Odd number, so one team of three. ${curFmt().key==='house'?'They count the best 2 of 3 scores on holes 1–3, with adjusted Greensomes and Scramble handicaps.':'Where every player’s score counts, they count their best 2 of 3 on each hole.'}</p>`:'')+
   (draft.left?`<p class="note" style="color:#a01826">Odd number: <b>${esc(draft.left.n)}</b> is left over. Tick one more player, or add them to a pair yourself below.</p>`:'')+
   `<div style="border:0;padding:0;gap:8px"><button class="btn ghost" id="dagain" type="button" style="flex:1">Draw again</button><button class="btn" id="duse" type="button" style="flex:1">Use these pairs</button></div>`}
 
@@ -2087,10 +2148,26 @@ function setWho(pid,key,v){(S[pid]??={})[key]=v;whoSaid(pid,parseInt(key),v);if(
   (pend[pid]??={})[key]=v;if(unconf===pid)return;clearTimeout(tm[pid]);tm[pid]=setTimeout(()=>{const d=pend[pid];delete pend[pid];
     fs.setDoc(fs.doc(db,'scores',pid),{s:d},{merge:true}).catch(e=>toast('Not saved: '+(e.code||e.message)))},300)}
 function needUpdate(){const b=$('banner');if(b&&!b.querySelector('[data-reload]'))b.innerHTML=`<div class="banner"><b>The app has been updated.</b> This phone is still on the older version. <button class="btn" data-reload type="button" style="display:block;width:100%;margin-top:8px">Update now</button></div>`}
+// Remove all pairs: every pair goes, saved at once (no Save setup), and every score with them, so a score entered by mistake
+// goes too. Two taps. Allowed while the round is locked by scores, but never while another organiser holds Setup.
+let pclearArm=0;
+async function clearPairs(btn){if(!R.pairs.length)return;
+  const scored=R.pairs.some(q=>Object.values(S[q.id]||{}).some(v=>v!=null));
+  if(Date.now()-pclearArm>4000){pclearArm=Date.now();btn.classList.replace('warn','armed');btn.textContent=scored?'Tap again: pairs AND scores go':'Tap again to remove every pair';if(setupDirty)toast('Unsaved changes in Setup will be dropped too.',3500);
+    setTimeout(()=>{if(Date.now()-pclearArm>=4000&&btn.isConnected){btn.classList.replace('armed','warn');btn.textContent='Remove all pairs'}},4100);return}
+  pclearArm=0;if(!setupWriteOk())return;btn.style.pointerEvents='none';
+  try{const{tsize:_ts,...rest}=R,data={...rest,pairs:[]};tsizeNext=null;
+    if(LOCAL){S={};ls.set('gs-demo-S',S);ls.set('gs-demo-C',{});C={};teamCheck(true);await saveRound(data)}
+    else{const b=fs.writeBatch(db);Object.keys(S).forEach(id=>b.delete(fs.doc(db,'scores',id)));b.set(fs.doc(db,'rounds','current'),data);
+      b.commit().catch(err=>toast('Not removed: '+(err.code||err.message),5000))}   // the phone shows it at once; with no signal it goes when the signal is back
+    feed=[];saveFeed();
+    draft=null;sharedIds=null;shareNext=false;fsel.flow=null;setupDirty=false;if(view==='setup')renderSetup();
+    toast(scored?'All pairs removed and their scores cleared.':'All pairs removed.',3000)}
+  catch(err){toast('Not removed: '+(err.code||err.message),4000)}finally{btn.style.pointerEvents=''}}
 function setGroupVal(tid,key,v){(S[tid]??={})[key]=v;if(LOCAL){ls.set('gs-demo-S',S);render('scores');return}
   render('scores');fs.setDoc(fs.doc(db,'scores',tid),{s:{[key]:v}},{merge:true}).catch(e=>toast('Not saved: '+(e.code||e.message)))}
 function setScore(pid,key,val){
-  if(!/[abc]$/.test(key)&&val==null&&S[pid]?.[key+'w']!=null)setWho(pid,key+'w',null);   // hole cleared: forget whose shot it was (a correction keeps it)
+  if(!/[a-e]$/.test(key)&&val==null&&S[pid]?.[key+'w']!=null)setWho(pid,key+'w',null);   // hole cleared: forget whose shot it was (a correction keeps it)
   (S[pid]??={})[key]=val;lastTap=Date.now();noteChange(pid,key,val,true);lastPop={pid,key,t:Date.now()};
   if(LOCAL){ls.set('gs-demo-S',S);render('scores');return}
   (pend[pid]??={})[key]=val;render('scores');
@@ -2170,13 +2247,15 @@ $('v-setup').addEventListener('input',e=>{const t=e.target;if(t.closest('.pinf')
   if(t.id==='dbal'){dbal=t.checked;return}
   if(t.id==='dedit'){dEdit=t.checked;dPick=null;if(draft)draft.sw=null;showDraft();return}
   setupDirty=true;
-  const f=t.dataset.f;if(f==='p1'||f==='p2'||f==='p3'){const m=findP(t.value),h=t.closest('.pair').querySelector(`[data-f=h${f[1]}]`);
+  const f=t.dataset.f;if(/^p[1-5]$/.test(f||'')){const m=findP(t.value),h=t.closest('.pair').querySelector(`[data-f=h${f[1]}]`);
     if(m){if(h){h.value=fmtH(m.h);h.dataset.auto=1;h.classList.add('filled');setTimeout(()=>h.classList.remove('filled'),900)}}
     else if(h&&h.dataset.auto){h.value='';delete h.dataset.auto}}   // was filled from the roster, now a guest: clear it
-  if(/^h[123]$/.test(f||''))delete t.dataset.auto});
+  if(/^h[1-5]$/.test(f||''))delete t.dataset.auto});
 $('v-setup').addEventListener('change',e=>{const t=e.target,f=t.dataset.f;
-  if(t.dataset.fmix!=null){fsel.mix[+t.dataset.fmix]=t.value;fsel.res=fsel.mix.every(Boolean)?E.mkFormat(fsel.mix.slice(),'hand'):null;fsel.note='';fmtDraw();return}if(t.id==='orgname'){ls.set('gs-org-name',t.value.trim().slice(0,30));if(lockMine())lockClaim();return}if(f==='p1'||f==='p2'||f==='p3'){const m=findP(t.value);if(m)t.value=sugName(m)}});
+  if(t.dataset.fmix!=null){fsel.mix[+t.dataset.fmix]=t.value;fsel.res=fsel.mix.every(Boolean)?E.mkFormat(fsel.mix.slice(),'hand'):null;fsel.note='';fmtDraw();return}if(t.id==='orgname'){ls.set('gs-org-name',t.value.trim().slice(0,30));if(lockMine())lockClaim();return}if(/^p[1-5]$/.test(f||'')){const m=findP(t.value);if(m)t.value=sugName(m)}});
 $('v-setup').addEventListener('click',async e=>{const t=e.target.closest('button')||e.target;
+  if(t.id==='pclear'){e.preventDefault();await clearPairs(t);return}
+  if(t.dataset&&t.dataset.dsize){dsizeSet=+t.dataset.dsize;document.querySelectorAll('#dsize [data-dsize]').forEach(b=>b.classList.toggle('on',+b.dataset.dsize===dsz()));const w=$('dwhat');if(w)w.textContent=dsz()===4?'Draw teams of 4':'Draw pairs';buzz();return}
   if(t.closest&&t.closest('#fmtbox')&&fmtClick(t))return;
   if(t.id==='ltake'){if(Date.now()-takeArm>=4000){takeArm=Date.now();applySetupLock();setTimeout(applySetupLock,4100);return}
     takeArm=0;lockQuiet=true;let ok=false;try{ok=await lockClaim(true)}finally{lockQuiet=false}
@@ -2205,16 +2284,18 @@ $('v-setup').addEventListener('click',async e=>{const t=e.target.closest('button
     arr.splice(ix,1);const ws=m.name.split(' ');r.unk.push({name:m.name,n:ws[0],l:ws.slice(1).join(' '),h:m.h});wlDraw();toast(`${m.name} isn’t on the players list, so add their handicap.`,3500);return}
   if(t.matches('[data-wladd]')){await wlAdd(t.dataset.wladd,t);return}
   if(t.id==='addp'){$('pairs').insertAdjacentHTML('beforeend',pairRow({id:newId()}));setupDirty=true;if(sharedIds){sharedIds=null;showDraft()}}
-  else if(t.matches('[data-add3]')){t.insertAdjacentHTML('afterend',p3Inputs({}));t.remove();setupDirty=true}
+  else if(t.matches('[data-add3]')){t.insertAdjacentHTML('afterend',p3Inputs({})+add4Btn);t.remove();setupDirty=true}
+  else if(t.matches('[data-add4]')){t.insertAdjacentHTML('afterend',p4Inputs({})+add5Btn);t.remove();setupDirty=true}
+  else if(t.matches('[data-add5]')){t.insertAdjacentHTML('afterend',p5Inputs({}));t.remove();setupDirty=true}
   else if(t.matches('[data-rm]')){t.closest('.pair').remove();setupDirty=true;if(sharedIds){sharedIds=null;showDraft()}}
   else if(t.id==='dall'||t.id==='dnone'){document.querySelectorAll('#dlist .chk:not([hidden]) input').forEach(i=>{i.checked=t.id==='dall';i.checked?drawSel.add(i.dataset.dp):drawSel.delete(i.dataset.dp)});ls.set('gs-draw2',[...drawSel]);$('dcount').textContent=drawSel.size}
-  else if(t.id==='ddraw'||t.id==='dagain'){if(drawSel.size<2){toast('Tick at least 2 players');return}draft=drawPairs($('dbal').checked);dPick=null;sharedIds=null;shareNext=false;useArmed=0;showDraft()}
+  else if(t.id==='ddraw'||t.id==='dagain'){if(drawSel.size<2){toast('Tick at least 2 players');return}if(dsz()===4&&drawSel.size<5){toast('Teams of four need at least 5 players');return}draft=drawPairs($('dbal').checked);draft.size=dsz();dPick=null;sharedIds=null;shareNext=false;useArmed=0;fsel.flow=null;showDraft();fmtDraw()}
   else if(t.id==='duse'){if(!draft||!setupWriteOk())return;if($('save').disabled){toast('Still saving the last change. Try again in a moment.');return}
     const scored=R.pairs.some(p=>Object.values(S[p.id]||{}).some(v=>v!=null));
     if(scored&&Date.now()-useArmed>5000){useArmed=Date.now();t.classList.add('armed');t.textContent='Scores exist! Tap again';toast('This round already has scores. Archive it first (bottom of Setup), or tap again to replace the pairs. Old scores stop counting.',5000);return}
-    const all=draft.pairs.flat();shareNext=true;sharedIds=null;
-    $('pairs').innerHTML=draft.pairs.map(([a,b,c])=>pairRow({id:newId(),p1:drawName(a,all),h1:a.h,p2:drawName(b,all),h2:b.h,...(c?{p3:drawName(c,all),h3:c.h}:{})})).join('');draft=null;useArmed=0;showDraft();setupDirty=true;
-    $('save').click();if(scored)toast('Pairs replaced. Clear the old scores below when you start the new round.',4500)}
+    const all=draft.pairs.flat(),draft0size=draft.size||2;shareNext=true;sharedIds=null;
+    $('pairs').innerHTML=draft.pairs.map(([a,b,c,d,e])=>pairRow({id:newId(),p1:drawName(a,all),h1:a.h,p2:drawName(b,all),h2:b.h,...(c?{p3:drawName(c,all),h3:c.h}:{}),...(c&&d?{p4:drawName(d,all),h4:d.h}:{}),...(c&&d&&e?{p5:drawName(e,all),h5:e.h}:{})})).join('');draft=null;useArmed=0;showDraft();setupDirty=true;
+    tsizeNext=draft0size;$('save').click();if(scored)toast('Pairs replaced. Clear the old scores below when you start the new round.',4500)}
   else if(t.id==='t-time-x'){const i=$('t-time');if(i.value){i.value='';setupDirty=true}}
   else if(t.id==='addpl'){$('players').insertAdjacentHTML('beforeend',playerRow({}));setupDirty=true}
   else if(t.matches('[data-prm]')){t.closest('.prow').remove();setupDirty=true}
@@ -2223,12 +2304,14 @@ $('v-setup').addEventListener('click',async e=>{const t=e.target.closest('button
     const seen=new Set(),dup=list.find(p=>{const k=pkey(p).toLowerCase();if(seen.has(k))return true;seen.add(k)});if(dup){toast(`${pkey(dup)} is on the list twice`);return}
     try{t.disabled=true;await savePlayers(list);P=list;setupDirty=false;toast('Players saved')}catch(err){toast('Not saved: '+(err.code||err.message))}finally{t.disabled=false}}
   else if(t.id==='save'){if(!setupWriteOk())return;const pairs=[...document.querySelectorAll('.pair')].map(r=>{const o={id:r.dataset.id};if(r.dataset.tg!=null&&r.dataset.tg!=='')o.tg=+r.dataset.tg;
-      r.querySelectorAll('[data-f]').forEach(i=>{const f=i.dataset.f,v=i.value.trim();if((f==='p3'||f==='h3')&&!r.querySelector('[data-f=p3]').value.trim())return;o[f]=f[0]==='h'?parseH(v):v});return o});
+      r.querySelectorAll('[data-f]').forEach(i=>{const f=i.dataset.f,v=i.value.trim();o[f]=f[0]==='h'?parseH(v):v});
+      {const ex=[3,4,5].map(k=>[o['p'+k],o['h'+k]]).filter(x=>x[0]);[3,4,5].forEach((k,i)=>{if(ex[i]){o['p'+k]=ex[i][0];o['h'+k]=ex[i][1]}else{delete o['p'+k];delete o['h'+k]}})}   // an emptied box: the players below move up
+      return o});
     const par=[...document.querySelectorAll('[data-par]')].map(i=>Math.min(7,Math.max(3,parseInt(i.value)||4))),si=[...document.querySelectorAll('[data-si]')].map(i=>parseInt(i.value)||0);
-    if(new Set(si).size!==9||si.some(v=>v<1||v>18)){shareNext=false;toast('Each hole needs its own SI (1–18). Check the course card.');return}
-    try{t.disabled=true;await saveRound({title:$('t-title').value.trim(),course:$('t-course').value.trim(),time:$('t-time').value||'',par,si,pairs:assignTees(pairs),...(fmtOK(R.fmt)?{fmt:R.fmt}:{}),...(R.three?{three:R.three}:{})});setupDirty=false;{const rr=calcIn({...R,pairs},{}),bad=rr.teams.length>=2&&curFmt().segs.map(x=>E.suits(x.f,rr)).find(r=>!r.ok);toast(bad?`Setup saved. But ${curFmt().name} doesn’t suit these teams (${bad.why.toLowerCase()}): choose another format.`:'Setup saved',bad?6000:2400)}fmtDraw();
-      if(shareNext){shareNext=false;sharedIds=pairs.map(p=>p.id).join();showDraft();const d=$('dres');if(d)d.scrollIntoView({behavior:reduce?'auto':'smooth',block:'center'})}}
-    catch(err){shareNext=false;toast('Not saved: '+(err.code||err.message))}finally{t.disabled=false}}
+    if(new Set(si).size!==9||si.some(v=>v<1||v>18)){shareNext=false;tsizeNext=null;toast('Each hole needs its own SI (1–18). Check the course card.');return}
+    try{t.disabled=true;const savedTs=(tsizeNext??R.tsize)===4?4:undefined;await saveRound({title:$('t-title').value.trim(),course:$('t-course').value.trim(),time:$('t-time').value||'',par,si,pairs:assignTees(pairs),...(fmtOK(R.fmt)?{fmt:R.fmt}:{}),...(R.three?{three:R.three}:{}),...(savedTs?{tsize:4}:{})});tsizeNext=null;setupDirty=false;{const rr=calcIn({...R,pairs,tsize:savedTs},{}),bad=rr.teams.length>=2&&curFmt().segs.map(x=>E.suits(x.f,rr)).find(r=>!r.ok);toast(bad?`Setup saved. But ${curFmt().name} doesn’t suit these teams (${bad.why.toLowerCase()}): choose another format.`:'Setup saved',bad?6000:2400)}fmtDraw();
+      if(shareNext){shareNext=false;sharedIds=pairs.map(p=>p.id).join();Object.assign(fsel,{flow:'pick',open:true,res:null,note:''});showDraft();fmtDraw();const d=$('fmtp');if(d)d.scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'})}}
+    catch(err){shareNext=false;tsizeNext=null;toast('Not saved: '+(err.code||err.message))}finally{t.disabled=false}}
   else if(t.id==='arch'){const un=unfinished();
     if(!R.pairs.length){toast('No round to archive yet');return}
     if(un.length){toast(`Archive unlocks when every team has a score on all 9 holes. Missing: ${un.slice(0,4).join(', ')}${un.length>4?` and ${un.length-4} more`:''}. ${ARCH_HELP}`,8000);return}
