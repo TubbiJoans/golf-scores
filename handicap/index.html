@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0e3b2c">
+<title>Handicaps</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Same look as the live scores app: fairway green, white cards, flag red accent, Barlow Condensed numbers, Inter text */
+:root{--g:#0e3b2c;--g2:#1f5c44;--g3:#e8f1ec;--ink:#13201a;--mut:#5b6b63;--line:#d9e2dc;--bg:#f4f7f5;--red:#e63946;--card:#fff;--gold:#f4b740;--up:#15803d}
+*{box-sizing:border-box;min-width:0}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Inter,system-ui,sans-serif;overflow-x:clip;padding-bottom:calc(24px + env(safe-area-inset-bottom));-webkit-tap-highlight-color:transparent}
+button,input,select{font:inherit;color:inherit}
+.top{background:var(--g);color:#fff;padding:calc(env(safe-area-inset-top) + 14px) 16px 10px;display:flex;gap:12px;align-items:center;justify-content:space-between}
+h1{font:700 26px/1.05 "Barlow Condensed",system-ui,sans-serif;margin:0}
+.top p{margin:2px 0 0;font-size:13px;opacity:.8}
+.top a{color:#fff;font-size:13px;opacity:.85}
+.tabs{display:flex;background:var(--g);padding:0 10px 10px;gap:6px;position:sticky;top:0;z-index:5;overflow-x:auto}
+.tabs button{flex:1 0 auto;border:0;background:rgba(255,255,255,.12);color:#fff;border-radius:10px;padding:9px 9px;font-weight:600;font-size:13.5px;min-height:44px}
+.tabs button.on{background:#fff;color:var(--g)}
+main{max-width:640px;margin:0 auto;padding:14px 16px}
+.panel{background:var(--card);border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+h2{font:700 20px/1.1 "Barlow Condensed",system-ui,sans-serif;margin:0 0 10px;letter-spacing:.2px}
+h3{font-size:15px;margin:14px 0 6px}
+label{display:block;font-size:13px;color:var(--mut);margin:10px 0 4px}
+input,select{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff;min-height:44px}
+input:focus,select:focus{outline:2px solid var(--g2);outline-offset:1px}
+.row{display:flex;gap:10px;flex-wrap:wrap}.row>*{flex:1 1 140px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:12px;background:var(--g);color:#fff;font-weight:600;padding:10px 16px;min-height:44px;cursor:pointer;text-decoration:none}
+.btn.ghost{background:var(--g3);color:var(--g)}
+.btn.warn{background:#fde8ea;color:#a01826}.btn.armed{background:var(--red);color:#fff}
+.btn.wide{width:100%;margin-top:12px}
+.btn:disabled{opacity:.5}
+.note{font-size:13px;color:var(--mut);margin:6px 0 0}
+.note.warn{color:#a01826}
+.big{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap}
+.big b{font:700 64px/0.9 "Barlow Condensed",system-ui,sans-serif;color:var(--g)}
+.big span{font-size:14px;color:var(--mut);padding-bottom:6px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.chip{font-size:12px;padding:3px 9px;border-radius:99px;background:var(--g3);color:var(--g);font-weight:600}
+.chip.red{background:#fde8ea;color:#a01826}.chip.gold{background:#fff4d6;color:#6b4e00}
+.rec{list-style:none;margin:0;padding:0}
+.rec li{border-top:1px solid var(--line)}
+.rec summary{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:10px 2px;cursor:pointer;list-style:none}
+.rec summary::-webkit-details-marker{display:none}
+.rec .when{font-size:14px}.rec .when small{display:block;color:var(--mut);font-size:12px}
+.rec .sc{font:600 18px "Barlow Condensed",system-ui,sans-serif;text-align:right}.rec .sc small{display:block;font:12px Inter,system-ui,sans-serif;color:var(--mut)}
+.rec .df{font:700 22px "Barlow Condensed",system-ui,sans-serif;min-width:52px;text-align:center;border-radius:10px;padding:2px 6px}
+.rec .df.counts{background:var(--g);color:#fff}
+.rec .df.out{color:#9aa6a0}
+.rec .more{padding:0 2px 12px;font-size:13px;color:var(--mut)}
+.rec .when .chips{margin-top:4px;gap:4px}.rec .when .chip{font-size:11px;padding:2px 7px}
+.holes{display:grid;grid-template-columns:repeat(9,1fr);gap:2px;text-align:center;font-size:12px;margin:8px 0}
+.holes div{padding:3px 0;border-radius:6px;background:var(--bg)}
+.holes div.cap{background:#fde8ea;color:#a01826;font-weight:700}.holes div.np{background:#fff4d6}
+.grid{display:grid;grid-template-columns:auto 1fr auto;gap:6px 10px;align-items:center;margin-top:8px}
+.grid .h{font-weight:600}.grid .h small{display:block;font-weight:400;color:var(--mut);font-size:12px}
+.grid .mx{font-size:12px;color:var(--mut);text-align:right;min-width:62px}
+.grid .mx.hit{color:#a01826;font-weight:700}
+.grid input{text-align:center;font-size:18px;font-weight:600;padding:8px}
+.sum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.sum div{background:var(--bg);border-radius:12px;padding:8px;text-align:center}
+.sum b{display:block;font:700 26px/1.1 "Barlow Condensed",system-ui,sans-serif}
+.sum small{font-size:12px;color:var(--mut)}
+.plist{list-style:none;margin:0;padding:0}
+.plist li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 2px;border-top:1px solid var(--line);cursor:pointer}
+.plist li b{font:700 24px "Barlow Condensed",system-ui,sans-serif;color:var(--g)}
+.plist li small{color:var(--mut);font-size:12px;display:block}
+.seg{display:flex;background:var(--g3);border-radius:12px;padding:3px;gap:3px;margin-top:4px}
+.seg button{flex:1;border:0;background:none;border-radius:9px;padding:8px 6px;font-weight:600;font-size:14px;color:var(--g);min-height:40px}
+.seg button.on{background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.1)}
+.err{background:#fde8ea;color:#7a1220;border-radius:12px;padding:10px 12px;margin-top:12px;font-size:14px}
+.err:empty{display:none}
+.tee{border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:10px}
+.parsi{display:grid;grid-template-columns:auto repeat(9,1fr);gap:3px;font-size:12px;align-items:center;margin-top:6px}
+.parsi input{padding:6px 2px;text-align:center;min-height:36px;font-size:14px}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:20px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;width:max-content;max-width:min(90vw,440px);z-index:80;text-align:center}
+#toast.show{opacity:1}
+.demo{background:#fff4d6;color:#6b4e00;border-radius:12px;padding:10px 12px;font-size:13px;margin-bottom:14px}
+</style>
+</head>
+<body>
+<header class="top"><div><h1>Handicaps</h1><p id="sub">World Handicap System · for Friday golf</p></div><a href="../" id="back">← Live scores</a></header>
+<nav class="tabs" id="tabs"></nav>
+<main id="main"></main>
+<div id="toast" role="status"></div>
+<script type="module">
+import * as W from './whs.js';
+// ---------- setup ----------
+// Paste the same Firebase config as the live scores app here when this goes live. Left empty = demo mode (stored on this phone only).
+const firebaseConfig = {
+  apiKey: "AIzaSyAOCfd-NKd23WN2pGkvGzN1Ot-u5eAVbpI",
+  authDomain: "golf-scores-sifah.firebaseapp.com",
+  projectId: "golf-scores-sifah",
+  storageBucket: "golf-scores-sifah.firebasestorage.app",
+  messagingSenderId: "797319516606",
+  appId: "1:797319516606:web:b47468896797870f4ce9ef"
+};
+const LOCAL = !firebaseConfig;
+const ADMIN = 'admin@sifah.golf', SCORER = 'scorer@sifah.golf';
+const SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
+// Official ratings: Emirates Golf Federation course handicap tables for Al Sifah Resort Golf Club. Those are 18-hole figures for the
+// nine played twice (par 72); a 9-hole round uses half the Course Rating and the same Slope (doubled again for "18 holes, twice round").
+// Black 74.0/127, Blue 72.6/125, White 71.0/122, Yellow 68.6/116 are the men's; Red 71.6/121 is the ladies' (no men's Red sheet).
+// The printed tables leave out (Course Rating - Par); the WHS formula here includes it, so they can differ by a shot or more.
+const SIFAH_TEES = [['black', 'Black', 74.0, 127], ['blue', 'Blue', 72.6, 125], ['white', 'White', 71.0, 122], ['yellow', 'Yellow', 68.6, 116], ['red', 'Red (ladies)', 71.6, 121]]
+  .map(([id, name, cr18, slope]) => ({ id, name, cr: Math.round(cr18 / 2 * 10) / 10, slope }));
+const JEBEL = { id: 'jebel-sifah', name: 'Jebel Sifah', holes: 9, par: [4,4,5,4,5,3,4,3,4], si: [13,1,5,15,9,11,3,17,7], tees: SIFAH_TEES, owner: 'admin' };
+const TEE_COLOURS = [['Black', '⚫'], ['Blue', '🔵'], ['White', '⚪'], ['Yellow', '🟡'], ['Red', '🔴'], ['Gold', '🟠'], ['Green', '🟢']];
+const teeDot = name => { const n = String(name || '').toLowerCase(), m = TEE_COLOURS.find(([c]) => n.includes(c.toLowerCase())); return m ? m[1] + ' ' : '' };
+const DEMO_COURSES = [   // Jebel Sifah with its official ratings; Ghala's are made-up examples so the demo has an 18-hole course
+  { ...JEBEL, approved: true },
+  { id: 'ghala', name: 'Ghala Valley (example)', holes: 18, par: [4,4,3,5,4,4,3,4,5,4,3,4,5,4,4,3,5,4], si: [7,1,17,3,11,9,15,13,5,8,16,2,4,10,6,18,12,14],
+    tees: [{ id: 'white', name: 'White', cr: 71.2, slope: 131, front: { cr: 35.4, slope: 129 }, back: { cr: 35.8, slope: 133 } }, { id: 'red', name: 'Red', cr: 73.1, slope: 127 }], owner: 'admin', example: true, approved: true }];
+// a phone that saved demo courses before the official ratings went in still has the made-up Jebel Sifah ones: swap those for the real ones
+const demoCourses = () => { const C = ls.get('hc-demo-C', null); return Array.isArray(C) ? C.map(c => c && c.id === JEBEL.id && c.example ? { ...JEBEL, approved: true } : c) : DEMO_COURSES };
+const DEMO_USERS = ['admin@sifah.golf', 'fiona@sifah.golf', 'ben@sifah.golf', 'chon@sifah.golf'];
+const ROSTER_DEMO = ['Fiona Shearer', 'Ben Mason', 'Chumban Thai', 'Bradley Viljoen', 'Tim Fenton', 'Emma Fenton'];
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const ls = { get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d } catch { return d } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)) } catch {} } };
+function toast(t, ms = 2600) { const e = $('toast'); e.textContent = t; e.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => e.classList.remove('show'), ms) }
+const today = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10) };
+const fmtDate = d => new Date(d + 'T12:00:00').toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+// ---------- storage: demo (this phone) or Firebase ----------
+// Firestore layout:  hcPlayers/{uid} = { name, email, startHI?, hi, n, updated }
+//                    hcPlayers/{uid}/scores/{id} = one posted round (course details copied in, so later course edits don't change it)
+//                    hcCourses/{id} = { name, holes, par[], si[], tees[{id,name,cr,slope,front?,back?}], owner }
+let fs = null, au = null, db = null, auth = null;
+const store = {
+  async init(onUser) {
+    if (LOCAL) { const u = sessionStorage.getItem('hc-demo-user'); onUser(u ? { uid: u, email: u } : null); return }
+    const [appM, fsM, auM] = await Promise.all([import(SDK + 'firebase-app.js'), import(SDK + 'firebase-firestore.js'), import(SDK + 'firebase-auth.js')]);
+    fs = fsM; au = auM;
+    const app = appM.initializeApp(firebaseConfig, 'handicaps');   // its own named app: a player's login here never unlocks the live scores app (and the scorer login never shows up here)
+    db = fs.getFirestore(app); auth = au.getAuth(app);
+    au.onAuthStateChanged(auth, u => onUser(u ? { uid: u.uid, email: (u.email || '').toLowerCase() } : null));
+  },
+  async signIn(email, pw) {
+    if (LOCAL) { if (!DEMO_USERS.includes(email)) throw new Error('Demo: use one of the demo accounts'); sessionStorage.setItem('hc-demo-user', email); return { uid: email, email } }
+    const c = await au.signInWithEmailAndPassword(auth, email, pw); return { uid: c.user.uid, email: c.user.email.toLowerCase() };
+  },
+  async signOut() { if (LOCAL) { sessionStorage.removeItem('hc-demo-user'); return } await au.signOut(auth) },
+  async resetPassword(email) { if (LOCAL) return; await au.sendPasswordResetEmail(auth, email) },
+  async changePassword(pw) { if (LOCAL) return; await au.updatePassword(auth.currentUser, pw) },
+  async profiles() {
+    let o = {};
+    if (LOCAL) o = ls.get('hc-demo-P', {});
+    else { const q = await fs.getDocs(fs.collection(db, 'hcPlayers')); q.forEach(d => { o[d.id] = d.data() }) }
+    return cleanProfiles(o);
+  },
+  async saveProfile(uid, data) {
+    if (LOCAL) { const P = ls.get('hc-demo-P', {}); P[uid] = { ...(P[uid] || {}), ...data }; ls.set('hc-demo-P', P); return }
+    await fs.setDoc(fs.doc(db, 'hcPlayers', uid), data, { merge: true });
+  },
+  async deleteProfile(uid) {
+    if (LOCAL) { const P = ls.get('hc-demo-P', {}), S = ls.get('hc-demo-S', {}); delete P[uid]; delete S[uid]; ls.set('hc-demo-P', P); ls.set('hc-demo-S', S); return }
+    const q = await fs.getDocs(fs.collection(db, 'hcPlayers', uid, 'scores'));
+    await Promise.all(q.docs.map(d => fs.deleteDoc(d.ref))); await fs.deleteDoc(fs.doc(db, 'hcPlayers', uid));
+  },
+  async scores(uid) {
+    const raw = LOCAL ? ls.get('hc-demo-S', {})[uid] || []
+      : (await fs.getDocs(fs.collection(db, 'hcPlayers', uid, 'scores'))).docs.map(d => ({ ...d.data(), id: d.id, at: d.data().at?.toMillis?.() ?? null }));
+    return raw.map(W.cleanScore).filter(Boolean);   // anything malformed is left out rather than breaking the page
+  },
+  async addScore(uid, s) {
+    if (LOCAL) { const S = ls.get('hc-demo-S', {}); (S[uid] ??= []).push({ ...s, at: Date.now() }); ls.set('hc-demo-S', S); return }
+    const { id, ...rest } = s; await fs.setDoc(fs.doc(db, 'hcPlayers', uid, 'scores', id), { ...rest, at: fs.serverTimestamp() });
+  },
+  async delScore(uid, id) {
+    if (LOCAL) { const S = ls.get('hc-demo-S', {}); S[uid] = (S[uid] || []).filter(x => x.id !== id); ls.set('hc-demo-S', S); return }
+    await fs.deleteDoc(fs.doc(db, 'hcPlayers', uid, 'scores', id));
+  },
+  async courses() {
+    if (LOCAL) return demoCourses().map(cleanCourse).filter(Boolean);
+    const q = await fs.getDocs(fs.collection(db, 'hcCourses')); const out = q.docs.map(d => cleanCourse({ ...d.data(), id: d.id })).filter(Boolean);
+    return out.some(c => c.id === JEBEL.id) ? out : [JEBEL, ...out];
+  },
+  async saveCourse(c) {
+    if (LOCAL) { const C = demoCourses(); const i = C.findIndex(x => x.id === c.id); if (i >= 0) C[i] = c; else C.push(c); ls.set('hc-demo-C', C); return }
+    const { id, ...rest } = c; await fs.setDoc(fs.doc(db, 'hcCourses', id), rest);
+  },
+  async roster() {
+    if (LOCAL) return ROSTER_DEMO;
+    try { const d = await fs.getDoc(fs.doc(db, 'rounds', 'roster')); const p = d.exists() && d.data().players; return Array.isArray(p) ? p.map(x => x.n).filter(Boolean) : [] } catch { return [] }
+  },
+};
+
+// ---------- data read back from the database is made safe before use ----------
+const fnum = v => typeof v === 'number' && Number.isFinite(v) ? v : null;
+function cleanProfiles(o) { const out = {};
+  for (const [k, p] of Object.entries(o || {})) { if (!p || typeof p !== 'object') continue;
+    out[k] = { ...p, name: String(p.name ?? '').slice(0, 40), email: typeof p.email === 'string' ? p.email : '', hi: fnum(p.hi), n: Number.isInteger(p.n) ? p.n : 0, startHI: fnum(p.startHI) } }
+  return out }
+function cleanCourse(c) {
+  if (!c || (c.holes !== 9 && c.holes !== 18) || !Array.isArray(c.par) || !Array.isArray(c.si) || !Array.isArray(c.tees) || !c.tees.length) return null;
+  const tee = t => ({ id: String(t?.id ?? ''), name: String(t?.name ?? '').slice(0, 40), cr: fnum(t?.cr), slope: fnum(t?.slope),
+    front: t?.front ? { cr: fnum(t.front.cr), slope: fnum(t.front.slope) } : null, back: t?.back ? { cr: fnum(t.back.cr), slope: fnum(t.back.slope) } : null });
+  return { ...c, id: String(c.id), name: String(c.name ?? '').slice(0, 60), par: c.par.slice(0, c.holes).map(v => Number.isInteger(v) ? v : ''), si: c.si.slice(0, c.holes).map(v => Number.isInteger(v) ? v : ''),
+           tees: c.tees.map(tee), owner: String(c.owner ?? ''), approved: c.approved === true } }
+
+// ---------- state ----------
+let user = null, view = 'me', P = {}, C = [], mine = [], others = {}, roster = [], openPlayer = null, postFor = null, armed = {}, editCourse = null;
+const isAdmin = () => !!user && user.email === ADMIN;
+const me = () => user && P[user.uid];
+const recOf = (scores, prof) => W.computeRecord(scores, { startHI: prof && prof.startHI, today: today() });
+
+async function loadAll() {
+  [P, C, roster] = await Promise.all([store.profiles(), store.courses(), store.roster()]);
+  mine = user && P[user.uid] ? await store.scores(user.uid) : [];
+}
+async function refreshCache(uid) {       // keep the player's Index on their profile, for the player list and, later, the team draw
+  const sc = uid === user.uid ? mine : await store.scores(uid), r = recOf(sc, P[uid]);
+  const data = { hi: r.hi, n: sc.length, updated: Date.now() }; await store.saveProfile(uid, data); P[uid] = { ...P[uid], ...data };
+}
+
+// ---------- views ----------
+function tabs() {
+  const t = !user ? [] : isAdmin() ? [['players', 'Players'], ['post', 'Post for a player'], ['courses', 'Courses']] : !me() ? [] : [['me', 'My Index'], ['post', 'Post a score'], ['players', 'Players'], ['courses', 'Courses']];
+  $('tabs').innerHTML = t.map(([v, n]) => `<button data-v="${v}" class="${v === view ? 'on' : ''}">${n}</button>`).join('');
+  $('tabs').hidden = !t.length;
+}
+function render() {
+  tabs(); const m = $('main');
+  const demo = LOCAL ? `<div class="demo"><b>Demo mode.</b> Scores are kept on this phone only. Jebel Sifah has its official ratings; Ghala Valley is a made-up example.</div>` : '';
+  if (!user) { m.innerHTML = demo + signInHtml(); return }
+  if (!isAdmin() && !me()) { m.innerHTML = demo + whoHtml(); return }
+  if (isAdmin() && view === 'me') view = 'players';
+  m.innerHTML = demo + (view === 'me' ? meHtml() : view === 'post' ? postHtml() : view === 'players' ? playersHtml() : coursesHtml()) + accountHtml();
+  if (view === 'post') postCalc();
+}
+function signInHtml() {
+  return `<div class="panel"><h2>Sign in</h2><p class="note" style="margin:0 0 6px">Use the email and password the organiser gave you. This is your own login: only you (and the organisers) can post scores to your record.</p>
+    <form id="signin"><label for="em">Email</label><input id="em" type="email" autocomplete="username" required ${LOCAL ? 'list="demousers"' : ''}>
+    ${LOCAL ? `<datalist id="demousers">${DEMO_USERS.map(u => `<option value="${u}">`).join('')}</datalist>` : ''}
+    <label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password" ${LOCAL ? '' : 'required'}>
+    <button class="btn wide" type="submit">Sign in</button></form>
+    ${LOCAL ? `<p class="note">Demo accounts: ${DEMO_USERS.map(esc).join(', ')} (any password). admin@ is the organiser.</p>` : `<button class="btn ghost wide" id="forgot" type="button">Forgot password</button>`}</div>`;
+}
+function whoHtml() {
+  const taken = new Set(Object.values(P).map(p => (p.name || '').toLowerCase()));
+  return `<div class="panel"><h2>Who are you?</h2><p class="note" style="margin:0">Pick your name as it appears on the Friday player list, so your handicap lines up with the team draw.</p>
+    <label for="who">Your name</label><input id="who" list="rosterl" autocomplete="name">
+    <datalist id="rosterl">${roster.filter(n => !taken.has(n.toLowerCase())).map(n => `<option value="${esc(n)}">`).join('')}</datalist>
+    <button class="btn wide" id="whosave" type="button">Continue</button><button class="btn ghost wide" id="out" type="button">Sign out</button></div>`;
+}
+function accountHtml() {
+  return `<div class="panel"><h2>Account</h2><p class="note" style="margin:0">Signed in as ${esc(user.email)}${isAdmin() ? ' (organiser)' : ''}.</p>
+    ${LOCAL || isAdmin() ? '' : `<details style="margin-top:8px"><summary style="cursor:pointer;font-weight:600">Change password</summary><label for="npw">New password (6+ characters)</label><input id="npw" type="password" autocomplete="new-password"><button class="btn ghost wide" id="setpw" type="button">Save new password</button></details>`}
+    <button class="btn ghost wide" id="out" type="button">Sign out</button></div>`;
+}
+function chipsFor(r) {
+  const c = [];
+  if (r.counts) c.push('<span class="chip">Counts</span>');
+  if (r.kind === '9+expected') c.push(`<span class="chip gold">9 holes + expected ${r.expected}</span>`);
+  if (r.kind === '9+9') c.push(`<span class="chip gold">${r.diff == null ? 'Paired with a later 9' : 'Paired 9s'}</span>`);
+  if (r.waiting) c.push('<span class="chip gold">Waiting for another 9</span>');
+  if (r.esr) c.push(`<span class="chip red">Exceptional ${r.esr}</span>`);
+  if (r.capped) c.push(`<span class="chip red">${r.capped.kind === 'hard' ? 'Hard' : 'Soft'} cap</span>`);
+  if (r.total != null) c.push('<span class="chip">Total only</span>');
+  return c.join('');
+}
+function recordHtml(scores, prof, uid, canDel) {
+  const r = recOf(scores, prof), byId = Object.fromEntries(scores.map(s => [s.id, s]));
+  if (!scores.length) return `<p class="note">No scores posted yet.</p>`;
+  return `<ul class="rec">${r.rows.map(x => { const s = byId[x.id] || {}, holes = s.idx ? s.idx : [];
+    const fresh = !s.at || Date.now() - s.at < 864e5, del = canDel && (isAdmin() || fresh);
+    return `<li><details><summary><div class="when">${fmtDate(x.date)}<small>${esc(s.courseName || '')} · ${esc(s.teeName || '')} · ${s.play === 'front' ? 'Front 9' : s.play === 'back' ? 'Back 9' : esc(x.holes) + ' holes'}</small><div class="chips">${chipsFor(x)}</div></div>
+      <div class="sc">${esc(x.ags)}<small>${x.total != null ? 'adjusted' : x.played != null && x.played < x.holes ? `${esc(x.played)} of ${esc(x.holes)} played` : x.gross !== x.ags ? 'gross ' + esc(x.gross) : 'gross'}</small></div>
+      <div class="df ${x.counts ? 'counts' : x.recent ? '' : 'out'}" title="Score Differential">${x.diff != null ? W.fmtHI(x.diff) : '…'}</div></summary>
+      <div class="more">
+        ${x.adj ? `<div class="holes">${x.adj.map((a, i) => `<div class="${esc(x.changed[i])}" title="Hole ${esc(holes[i] || i + 1)}"><small>${esc(holes[i] || i + 1)}</small><br>${esc(a)}</div>`).join('')}</div>
+          <p class="note" style="margin:0">Red = brought down to net double bogey · Yellow = not played, counted as net par</p>` : ''}
+        <p class="note">${x.holes === 9 ? `9-hole differential ${W.fmtHI(x.diffHoles)}. ` : ''}Course Rating ${esc(s.tee?.cr != null ? (+s.tee.cr).toFixed(1) : '–')} · Slope ${esc(s.tee?.slope ?? '–')} · Par ${esc(s.tee?.par ?? '–')}${x.ch ? ` · Course Handicap ${W.fmtCH(x.ch.ch)}` : ''}${x.hiAfter != null ? ` · Index after: ${W.fmtHI(x.hiAfter)}` : ''}${s.marker ? ` · Played with ${esc(s.marker)}` : ''}${s.byName ? ` · Posted by ${esc(s.byName)}` : ''}</p>
+        ${del ? `<button class="btn warn" data-del="${esc(uid)}:${esc(x.id)}" type="button" style="margin-top:8px">Delete this score</button>` : canDel ? `<p class="note">Posted more than a day ago: ask an organiser to delete it.</p>` : ''}</div></details></li>` }).join('')}</ul>
+    <p class="note">The number on the right is each round's Score Differential. Green ones are the ${r.diffs.length >= 20 ? '8 best of your last 20' : 'ones used so far'}; grey ones are older than your last 20.</p>`;
+}
+function indexCard(scores, prof, title) {
+  const r = recOf(scores, prof);
+  const head = r.hi != null ? `<div class="big"><b>${W.fmtHI(r.hi)}</b><span>Handicap Index</span></div>`
+    : `<div class="big"><b>–</b><span>No Handicap Index yet</span></div><p class="note">${prof && prof.startHI != null ? `Post ${r.needed} more round${r.needed === 1 ? '' : 's'} (9 or 18 holes) to get your own Index.` : `Post ${r.needed} more 18-hole round${r.needed === 1 ? '' : 's'} (or two 9-hole rounds for each) to get your first Index.`}${r.waiting9 ? ' One 9-hole round is waiting for another 9 to pair with.' : ''}</p>
+       ${prof && prof.startHI != null && prof.startHI !== '' ? `<p class="note">Until then your starting Index ${W.fmtHI(+prof.startHI)} is used for net double bogey and 9-hole rounds.</p>` : ''}`;
+  const chs = r.working == null ? '' : C.filter(c => c.approved).flatMap(c => c.tees.filter(t => t.cr != null && t.slope).map(t => {
+    const s = W.roundSpec(c, t.id, c.holes === 9 ? '9' : '18'), ch = W.courseHandicap(r.working, s.tee, s.holes);
+    const d = c.holes === 9 ? W.roundSpec(c, t.id, '9x2') : null, ch2 = d ? W.courseHandicap(r.working, d.tee, d.holes) : null;
+    return `<li><span>${esc(c.name)} · ${teeDot(t.name)}${esc(t.name)}<small>${esc(s.holes)} holes${ch2 ? ` · 18 holes (twice round): ${esc(W.fmtCH(ch2.ch))}` : ''}</small></span><b>${esc(W.fmtCH(ch.ch))}</b></li>` })).join('');
+  return `<div class="panel"><h2>${esc(title)}</h2>${head}
+    <div class="chips">${r.low != null ? `<span class="chip">Low Index (last 12 months) ${W.fmtHI(r.low)}</span>` : ''}${r.capped ? `<span class="chip red">${r.capped.kind} cap: would be ${W.fmtHI(r.capped.from)}</span>` : ''}<span class="chip">${scores.length} score${scores.length === 1 ? '' : 's'} posted</span></div>
+    ${chs ? `<h3>Course Handicap (shots you get)</h3><ul class="plist">${chs}</ul>` : ''}</div>`;
+}
+function meHtml() {
+  return indexCard(mine, me(), me().name) + `<div class="panel"><h2>My scores</h2>${recordHtml(mine, me(), user.uid, true)}</div>`;
+}
+function playersHtml() {
+  if (openPlayer) {
+    const p = P[openPlayer] || {}, sc = others[openPlayer] || [];
+    return `<button class="btn ghost" id="pback" type="button" style="margin-bottom:12px">← All players</button>` + indexCard(sc, p, p.name || '?') +
+      (isAdmin() ? `<div class="panel"><h2>Organiser</h2>
+        <label for="pname">Name</label><input id="pname" value="${esc(p.name || '')}">
+        <label for="pstart">Starting Index (optional)</label><input id="pstart" inputmode="decimal" placeholder="e.g. 18.4, or +1.2" value="${p.startHI != null && p.startHI !== '' ? esc(W.fmtHI(+p.startHI)) : ''}">
+        <p class="note">For someone with an official handicap from a club: used until their own scores here give them an Index (3 rounds of 18, or 6 of 9).</p>
+        <button class="btn wide" id="psave" type="button">Save</button>
+        <button class="btn ghost wide" id="ppost" type="button">Post a score for ${esc(p.name || 'them')}</button>
+        <button class="btn warn wide" id="pdel" type="button">${armed.pdel ? 'Tap again: delete the player and all their scores' : 'Delete this player'}</button></div>` : '') +
+      `<div class="panel"><h2>Scores</h2>${recordHtml(sc, p, openPlayer, isAdmin())}</div>`;
+  }
+  const list = Object.entries(P).sort((a, b) => (a[1].name || '').localeCompare(b[1].name || ''));
+  // worked out from each player's own scores (not the number saved on their profile), so nobody can just type in a lower one
+  const hiOf = (uid, p) => others[uid] ? recOf(uid === user.uid ? mine : others[uid], p).hi : p.hi ?? null;
+  const nOf = (uid, p) => others[uid] ? (uid === user.uid ? mine : others[uid]).length : p.n || 0;
+  return `<div class="panel"><h2>Players</h2><p class="note" style="margin:0">Everyone's Handicap Index, worked out from the scores they've posted. Tap a name to see their scores.</p>
+    <ul class="plist" style="margin-top:8px">${list.map(([uid, p]) => `<li data-open="${esc(uid)}"><span>${esc(p.name || p.email || uid)}<small>${esc(nOf(uid, p))} score${nOf(uid, p) === 1 ? '' : 's'}${p.email ? '' : ' · no login'}</small></span><b>${others[uid] ? W.fmtHI(hiOf(uid, p)) : '…'}</b></li>`).join('') || '<li>No players yet.</li>'}</ul>
+    ${isAdmin() ? `<h3>Add a player without a login</h3><p class="note" style="margin:0">For someone who won't use the app: you post their scores for them.</p><div class="row" style="margin-top:6px"><input id="newp" placeholder="Name" list="rosterl2"><button class="btn" id="addp" type="button" style="flex:0 0 auto">Add</button></div>
+      <datalist id="rosterl2">${roster.map(n => `<option value="${esc(n)}">`).join('')}</datalist>
+      <p class="note">Players with a login appear here once they sign in for the first time. Create their logins in the Firebase console (Authentication → Users → Add user).</p>` : ''}</div>`;
+}
+// ---- posting a score
+let post = { date: null, course: null, tee: null, play: null, mode: 'holes', gross: {}, total: '', marker: '' };
+const lastTeeKey = (uid, cid) => `hc-tee-${uid}-${cid}`;
+function postSpec() { const c = C.find(x => x.id === post.course) || C[0]; if (!c) return null;
+  const remembered = postWho() ? ls.get(lastTeeKey(postWho(), c.id), null) : null;
+  const tee = c.tees.find(t => t.id === post.tee) || c.tees.find(t => t.id === remembered) || c.tees.find(t => /white/i.test(t.name)) || c.tees[0];
+  const play = post.play && (c.holes === 9 ? ['9', '9x2'] : ['18', 'front', 'back']).includes(post.play) ? post.play : (c.holes === 9 ? '9' : '18');
+  return { c, tee, play, spec: W.roundSpec(c, tee.id, play) } }
+function postHtml() {
+  if (!post.date) post.date = today();
+  const ps = postSpec(); if (!ps) return `<div class="panel">No courses yet.</div>`;
+  const { c, tee, play, spec } = ps, who = isAdmin() ? postFor : user.uid;
+  const players = Object.entries(P).sort((a, b) => (a[1].name || '').localeCompare(b[1].name || ''));
+  const plays = c.holes === 9 ? [['9', '9 holes'], ['9x2', '18 holes (twice round)']] : [['18', '18 holes'], ['front', 'Front 9'], ['back', 'Back 9']];
+  const g = post.gross[gkey()] || {};
+  return `<div class="panel"><h2>Post a score</h2>
+    ${isAdmin() ? `<label for="pfor">Posting for</label><select id="pfor"><option value="">Choose a player…</option>${players.map(([u, p]) => `<option value="${esc(u)}" ${u === who ? 'selected' : ''}>${esc(p.name || u)}</option>`).join('')}</select>` : ''}
+    <div class="row"><div><label for="pdate">Date played</label><input id="pdate" type="date" max="${today()}" value="${esc(post.date)}"></div>
+      <div><label for="pcourse">Course</label><select id="pcourse">${C.map(x => `<option value="${esc(x.id)}" ${x.id === c.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></div></div>
+    <label for="ptee">Tees</label><select id="ptee">${c.tees.map(t => `<option value="${esc(t.id)}" ${t.id === tee.id ? 'selected' : ''}>${teeDot(t.name)}${esc(t.name)}${t.cr == null || !t.slope ? ' (not rated yet)' : ''}</option>`).join('')}</select>
+    <label>Holes played</label><div class="seg" id="pplay">${plays.map(([v, n]) => `<button type="button" data-play="${v}" class="${v === play ? 'on' : ''}">${n}</button>`).join('')}</div>
+    ${c.approved ? '' : `<p class="note warn">This course's ratings haven't been checked by an organiser yet, so scores can't be posted to it.</p>`}
+    <p class="note">${spec.tee.cr != null && spec.tee.slope ? `Course Rating ${esc(+(+spec.tee.cr).toFixed(1))} · Slope ${esc(spec.tee.slope)} · Par ${esc(spec.tee.par)}${spec.approx ? ' · no 9-hole rating for this nine, so half the 18-hole rating is used' : ''}` : `<span class="note warn">This tee has no Course Rating and Slope yet. ${isAdmin() || c.owner === user.uid ? 'Add them under Courses.' : 'Ask an organiser to add them under Courses.'}</span>`}</p>
+    <label>How do you want to enter it?</label><div class="seg" id="pmode"><button type="button" data-mode="holes" class="${post.mode === 'holes' ? 'on' : ''}">Hole by hole</button><button type="button" data-mode="total" class="${post.mode === 'total' ? 'on' : ''}">Total only</button></div>
+    ${post.mode === 'holes' ? `<p class="note">Enter your strokes on each hole. <b>P</b> = picked up. Leave a hole empty if you didn't play it. The app brings any hole down to your maximum (net double bogey) for you.</p>
+      <div class="grid">${spec.idx.map((h, i) => `<div class="h">Hole ${h}<small>Par ${spec.par[i]} · SI ${spec.si[i]}</small></div><input data-hole="${i}" inputmode="numeric" autocomplete="off" maxlength="2" value="${esc(g[i] ?? '')}" aria-label="Hole ${h} strokes"><div class="mx" id="mx${i}"></div>`).join('')}</div>`
+      : `<label for="ptotal">Adjusted gross score (${spec.holes} holes)</label><input id="ptotal" inputmode="numeric" value="${esc(post.total)}">
+      <p class="note">Total only: you must bring each hole down to its maximum yourself before adding up. Maximums for you today: <span id="maxes"></span></p>`}
+    <label for="pmark">Played with (optional)</label><input id="pmark" value="${esc(post.marker)}" placeholder="Who marked your card" autocomplete="off">
+    <div class="sum"><div><b id="sAgs">–</b><small>Adjusted score</small></div><div><b id="sDiff">–</b><small>Differential</small></div><div><b id="sHi">–</b><small>Index after</small></div></div>
+    <p class="note" id="sNote"></p><div class="err" id="perr"></div>
+    <button class="btn wide" id="psubmit" type="button">Post score</button></div>`;
+}
+const gkey = () => { const ps = postSpec(); return ps ? ps.c.id + '|' + ps.play : '' };   // what's typed is kept per course and holes played
+function postScore() {      // the score being entered, as whs.js wants it
+  const ps = postSpec(); if (!ps) return null; const { c, tee, play, spec } = ps, g = post.gross[gkey()] || {};
+  const gross = spec.idx.map((_, i) => { const v = String(g[i] ?? '').trim().toUpperCase(); return v === '' ? null : v === 'P' || v === '0' ? 0 : /^\d+$/.test(v) ? +v : NaN });
+  const s = { id: 'new', date: post.date, holes: spec.holes, par: spec.par, si: spec.si, tee: spec.tee, idx: spec.idx, play, created: Date.now(),
+              courseId: c.id, courseName: c.name, teeId: tee.id, teeName: tee.name, marker: post.marker.trim().slice(0, 40) };
+  if (post.mode === 'total') s.total = post.total === '' ? NaN : +post.total; else s.gross = gross;
+  return s;
+}
+function postWho() { return isAdmin() ? postFor : user.uid }
+async function postScoresFor(uid) { return uid === user.uid ? mine : (others[uid] ??= await store.scores(uid)) }
+async function postCalc() {
+  const s = postScore(), uid = postWho(); if (!s) return;
+  const prev = uid ? await postScoresFor(uid) : [], prof = uid ? P[uid] : null, before = recOf(prev, prof);
+  const hiB = W.computeRecord(prev.filter(x => x.date <= s.date), { startHI: prof && prof.startHI }).working;
+  if (post.mode === 'holes') {
+    const a = W.adjustScore(s.gross.map(x => Number.isNaN(x) ? null : x), s.par, s.si, hiB, s.tee);
+    s.gross.forEach((g, i) => { const e = $('mx' + i); if (!e) return; e.textContent = g == null ? `net par ${a.netPar[i]}` : `max ${a.cap[i]}`; e.className = 'mx' + (g != null && a.adj[i] !== g ? ' hit' : '') });
+  } else { const a = W.adjustScore(s.par.map(() => 0), s.par, s.si, hiB, s.tee); const m = $('maxes'); if (m) m.textContent = a.cap.map((x, i) => `${s.idx[i]}: ${x}`).join(' · ') }
+  const errs = W.checkScore(s, hiB).filter(e => !/every hole|at least|Enter the total|whole numbers/.test(e) || ($('perr').dataset.tried === '1'));
+  if (s.date > today()) errs.push("The date can't be in the future.");
+  if (uid && W.checkScore(s, hiB).length === 0 && s.date <= today()) {
+    const after = recOf([...prev, s], prof), row = after.rows.find(x => x.id === 'new');
+    $('sAgs').textContent = row.ags; $('sDiff').textContent = row.diff != null ? W.fmtHI(row.diff) : '…'; $('sHi').textContent = W.fmtHI(after.hi);
+    $('sNote').textContent = row.waiting ? 'This 9-hole round will count once you post another 9 (until you have an Index, two 9s make one 18).'
+      : row.kind === '9+expected' ? `9 holes: your 9-hole differential ${W.fmtHI(row.diffHoles)} plus the expected ${row.expected} for the other 9.` : row.esr ? `Exceptional score: ${row.esr} applied to your recent differentials.` : '';
+  } else { $('sAgs').textContent = $('sDiff').textContent = '–'; $('sHi').textContent = W.fmtHI(before.hi); $('sNote').textContent = '' }
+  $('perr').textContent = errs.join(' ');
+}
+async function submitPost() {
+  const uid = postWho(), s = postScore(); const e = $('perr'); e.dataset.tried = '1';
+  if (!uid) { e.textContent = 'Choose the player.'; return }
+  const prev = await postScoresFor(uid), hiB = W.computeRecord(prev.filter(x => x.date <= s.date), { startHI: P[uid]?.startHI }).working;
+  const errs = W.checkScore(s, hiB); if (s.date > today()) errs.push("The date can't be in the future.");
+  const course = C.find(x => x.id === s.courseId); if (!course || !course.approved) errs.push('An organiser needs to check this course’s ratings before scores can be posted to it.');
+  if (!LOCAL && !navigator.onLine) errs.push('No signal: posting needs internet. Try again when you have a connection.');
+  if (errs.length) { e.textContent = errs.join(' '); return }
+  const doc = { ...s, id: newId() }; if (isAdmin()) doc.byName = 'organiser'; delete doc.hiBefore;
+  $('psubmit').disabled = true;
+  try {
+    await Promise.race([store.addScore(uid, doc), new Promise((_, no) => setTimeout(() => no(new Error('No answer from the server. Check your signal and try again.')), 15000))]);
+    if (uid === user.uid) mine = await store.scores(uid); else others[uid] = await store.scores(uid);
+    try { ls.set(lastTeeKey(uid, s.courseId), s.teeId) } catch {}
+    await refreshCache(uid); post.gross = {}; post.total = ''; post.marker = ''; e.dataset.tried = '';
+    toast('Score posted'); if (uid === user.uid) { view = 'me' } else { view = 'players'; openPlayer = uid } render(); scrollTo(0, 0);
+  } catch (err) { e.textContent = 'Not saved: ' + (err.code || err.message) } finally { const b = $('psubmit'); if (b) b.disabled = false }
+}
+// ---- courses
+function coursesHtml() {
+  if (editCourse) return courseFormHtml(editCourse);
+  return `<div class="panel"><h2>Courses</h2><p class="note" style="margin:0">Course Rating and Slope come from the course's scorecard or the national association. They decide how hard each course counts, so they need to be the official numbers.</p>
+    <ul class="plist" style="margin-top:8px">${C.map(c => `<li data-course="${esc(c.id)}"><span>${esc(c.name)}<small>${esc(c.holes)} holes · ${c.tees.map(t => `${teeDot(t.name)}${esc(t.name)} ${t.cr != null && t.slope ? `${esc((+t.cr).toFixed(1))}/${esc(t.slope)}` : '(no rating)'}`).join(' · ')}${c.approved ? '' : ' · <b>ratings not checked yet</b>'}</small></span><span class="chip">${isAdmin() || c.owner === user.uid ? 'Edit' : 'View'}</span></li>`).join('')}</ul>
+    <button class="btn ghost wide" id="cadd" type="button">+ Add a course</button>
+    <p class="note">Anyone can add a course they played; organisers can correct any course. Rounds already posted keep the ratings they were posted with.</p></div>`;
+}
+function courseFormHtml(c) {
+  const can = isAdmin() || c.owner === user.uid || c.isNew, ro = can ? '' : 'disabled';
+  const nines = c.holes === 18 ? [0, 9] : [0];
+  return `<div class="panel"><h2>${c.isNew ? 'Add a course' : esc(c.name)}</h2>
+    <fieldset ${ro} style="border:0;padding:0;margin:0">
+    <label for="cname">Course name</label><input id="cname" value="${esc(c.name)}">
+    <label>Holes</label><div class="seg" id="choles"><button type="button" data-holes="9" class="${c.holes === 9 ? 'on' : ''}">9 holes</button><button type="button" data-holes="18" class="${c.holes === 18 ? 'on' : ''}">18 holes</button></div>
+    <h3>Par and stroke index</h3>${nines.map(o => `<div class="parsi"><span>Hole</span>${[...Array(9)].map((_, i) => `<span style="text-align:center">${o + i + 1}</span>`).join('')}
+      <span>Par</span>${[...Array(9)].map((_, i) => `<input data-par="${o + i}" inputmode="numeric" value="${esc(c.par[o + i] ?? '')}" aria-label="Par hole ${o + i + 1}">`).join('')}
+      <span>SI</span>${[...Array(9)].map((_, i) => `<input data-si="${o + i}" inputmode="numeric" value="${esc(c.si[o + i] ?? '')}" aria-label="Stroke index hole ${o + i + 1}">`).join('')}</div>`).join('')}
+    <h3>Tees</h3>${c.tees.map((t, k) => `<div class="tee" data-tee="${k}"><b>${teeDot(t.name) || '⛳ '}${esc(t.name || 'New tee')}</b><div class="row"><div><label>Tee name</label><input data-t="name" value="${esc(t.name)}"></div>
+      <div><label>Course Rating${c.holes === 9 ? ' (9 holes)' : ''}</label><input data-t="cr" inputmode="decimal" value="${esc(t.cr ?? '')}" placeholder="e.g. ${c.holes === 9 ? '35.4' : '71.2'}"></div>
+      <div><label>Slope</label><input data-t="slope" inputmode="numeric" value="${esc(t.slope ?? '')}" placeholder="55–155"></div></div>
+      ${c.holes === 18 ? `<details ${t.front || t.back ? 'open' : ''} style="margin-top:8px"><summary style="cursor:pointer;font-size:13px;color:var(--mut)">9-hole ratings (optional, for front or back 9 rounds)</summary><div class="row"><div><label>Front 9 rating / slope</label><div class="row"><input data-t="fcr" inputmode="decimal" value="${esc(t.front?.cr ?? '')}" placeholder="rating"><input data-t="fsl" inputmode="numeric" value="${esc(t.front?.slope ?? '')}" placeholder="slope"></div></div>
+        <div><label>Back 9 rating / slope</label><div class="row"><input data-t="bcr" inputmode="decimal" value="${esc(t.back?.cr ?? '')}" placeholder="rating"><input data-t="bsl" inputmode="numeric" value="${esc(t.back?.slope ?? '')}" placeholder="slope"></div></div></div></details>` : ''}
+      ${c.tees.length > 1 ? `<button class="btn warn" type="button" data-trm="${k}" style="margin-top:8px">Remove tee</button>` : ''}</div>`).join('')}
+    <p class="note">Add every tee on the scorecard, each with its own rating and slope. If the card rates a tee differently for men and ladies, add it twice, e.g. "Red (men)" and "Red (ladies)".</p>
+    <div class="chips" style="margin-top:8px">${TEE_COLOURS.slice(0, 5).filter(([n]) => !c.tees.some(t => t.name.toLowerCase() === n.toLowerCase())).map(([n, d]) => `<button class="btn ghost" type="button" data-tq="${n}" style="min-height:40px;padding:6px 12px">${d} + ${n}</button>`).join('')}
+      <button class="btn ghost" id="tadd" type="button" style="min-height:40px;padding:6px 12px">+ Other tee</button></div></fieldset>
+    ${isAdmin() ? `<label style="display:flex;gap:10px;align-items:center;color:var(--ink);font-size:15px;margin-top:14px"><input type="checkbox" id="capprove" style="width:22px;min-height:22px;flex:none" ${c.approved ? 'checked' : ''}> Ratings checked against the official scorecard (scores can be posted)</label>`
+      : `<p class="note">${c.approved ? 'Changing this course sends it back to the organisers to check.' : 'An organiser checks the ratings before scores can be posted here.'}</p>`}
+    <div class="err" id="cerr"></div>
+    ${can ? `<button class="btn wide" id="csave" type="button">Save course</button>` : `<p class="note">Only the person who added this course, or an organiser, can change it.</p>`}
+    <button class="btn ghost wide" id="ccancel" type="button">Back</button></div>`;
+}
+function readCourseForm() {
+  const c = editCourse, n = c.holes;
+  c.name = $('cname').value.trim();
+  document.querySelectorAll('[data-par]').forEach(i => { c.par[+i.dataset.par] = i.value === '' ? '' : +i.value });
+  document.querySelectorAll('[data-si]').forEach(i => { c.si[+i.dataset.si] = i.value === '' ? '' : +i.value });
+  c.par = c.par.slice(0, n); c.si = c.si.slice(0, n);
+  document.querySelectorAll('[data-tee]').forEach(el => { const t = c.tees[+el.dataset.tee], v = k => el.querySelector(`[data-t=${k}]`)?.value.trim() ?? '';
+    const num = x => x === '' ? null : +x;
+    t.name = v('name'); t.cr = num(v('cr')); t.slope = num(v('slope'));
+    if (n === 18) { t.front = v('fcr') || v('fsl') ? { cr: num(v('fcr')), slope: num(v('fsl')) } : null; t.back = v('bcr') || v('bsl') ? { cr: num(v('bcr')), slope: num(v('bsl')) } : null }
+    else { delete t.front; delete t.back } });
+}
+function courseErrors(c) {
+  const e = [], n = c.holes;
+  if (!c.name) e.push('Give the course a name.');
+  if (c.par.length !== n || c.par.some(p => !(Number.isInteger(p) && p >= 3 && p <= 6))) e.push(`Par for all ${n} holes (3–6).`);
+  const si = c.si.map(Number); if (si.some(x => !(Number.isInteger(x) && x >= 1 && x <= 18)) || new Set(si).size !== n) e.push(`Stroke index for all ${n} holes, each different (1–18).`);
+  c.tees.forEach(t => { if (!t.name) e.push('Every tee needs a name.');
+    if ((t.cr != null || t.slope != null) && !(t.cr > (n === 9 ? 25 : 50) && t.cr < (n === 9 ? 45 : 85) && t.slope >= 55 && t.slope <= 155)) e.push(`${t.name || 'A tee'}: Course Rating looks wrong, or Slope isn't 55–155.`);
+    for (const k of ['front', 'back']) if (t[k] && !(t[k].cr > 25 && t[k].cr < 45 && t[k].slope >= 55 && t[k].slope <= 155)) e.push(`${t.name}: the ${k} 9 rating needs both a rating (about half the 18-hole one) and a slope.`) });
+  return [...new Set(e)];
+}
+
+// ---------- events ----------
+$('tabs').addEventListener('click', async e => { const b = e.target.closest('[data-v]'); if (!b) return; view = b.dataset.v; openPlayer = null; editCourse = null; armed = {};
+  if (view === 'players') { render(); P = await store.profiles(); await loadEveryone() } render(); scrollTo(0, 0) });
+async function loadEveryone() { const ids = Object.keys(P); const all = await Promise.all(ids.map(u => store.scores(u).catch(() => null))); ids.forEach((u, i) => { if (all[i]) others[u] = all[i] }) }
+document.addEventListener('submit', async e => { if (e.target.id !== 'signin') return; e.preventDefault();
+  const em = $('em').value.trim().toLowerCase(), pw = $('pw').value;
+  try { user = await store.signIn(em, pw); await loadAll(); view = isAdmin() ? 'players' : 'me'; if (isAdmin()) await loadEveryone(); render() }
+  catch (err) { const c = err.code || ''; toast(/invalid-credential|wrong-password|user-not-found|invalid-login/.test(c) ? 'Wrong email or password' : /network/.test(c) ? 'No signal: signing in needs internet' : (err.message || c), 3500) } });
+document.addEventListener('input', e => { const t = e.target;
+  if (t.dataset.hole != null) { const k = gkey(); (post.gross[k] ??= {})[t.dataset.hole] = t.value.toUpperCase().replace(/[^0-9P]/g, ''); t.value = post.gross[k][t.dataset.hole]; postCalc() }
+  else if (t.id === 'ptotal') { post.total = t.value.replace(/\D/g, ''); t.value = post.total; postCalc() }
+  else if (t.id === 'pmark') post.marker = t.value;
+  else if (t.id === 'pdate') { post.date = t.value; postCalc() } });
+document.addEventListener('change', async e => { const t = e.target;
+  if (t.id === 'pcourse') { post.course = t.value; post.tee = null; post.play = null; render() }
+  else if (t.id === 'ptee') { post.tee = t.value; render() }
+  else if (t.id === 'pfor') { postFor = t.value || null; post.gross = {}; post.total = ''; post.marker = ''; render() } });
+document.addEventListener('click', async e => { const t = e.target.closest('button,[data-open],[data-course]') || e.target; const id = t.id;
+  if (id === 'forgot') { const em = $('em').value.trim(); if (!em) { toast('Type your email first'); return }
+    try { await store.resetPassword(em); toast('Password reset email sent (check spam).', 3500) } catch { toast('Could not send a reset email. Ask an organiser to reset your password.', 4000) } return }
+  if (id === 'out') { await store.signOut(); user = null; P = {}; mine = []; others = {}; render(); return }
+  if (id === 'setpw') { const pw = $('npw').value; if (pw.length < 6) { toast('At least 6 characters'); return }
+    try { await store.changePassword(pw); toast('Password changed') } catch (err) { toast(/recent/.test(err.code || '') ? 'Sign out and in again, then change it.' : 'Not changed: ' + (err.code || err.message), 3500) } return }
+  if (id === 'whosave') { const n = $('who').value.trim().slice(0, 40); if (!n) { toast('Type your name'); return }
+    if (Object.values(P).some(p => (p.name || '').toLowerCase() === n.toLowerCase())) { toast('That name is already taken. Ask an organiser if it’s you.', 3500); return }
+    try { await store.saveProfile(user.uid, { name: n, email: user.email, n: 0, hi: null, updated: Date.now() }) }
+    catch (err) { toast(/permission/.test(err.code || '') ? 'This login can’t be used for handicaps. Sign in with your own login.' : 'Not saved: ' + (err.code || err.message), 4000); return }
+    P = await store.profiles(); view = 'me'; render(); return }
+  if (t.dataset.open) { openPlayer = t.dataset.open; others[openPlayer] = await store.scores(openPlayer); armed = {}; render(); scrollTo(0, 0); return }
+  if (id === 'pback') { openPlayer = null; render(); return }
+  if (id === 'psave' && isAdmin()) { const raw = $('pstart').value.trim(); let st = null;
+    if (raw) { const m = /^(\+)?(\d{1,2}(\.\d)?)$/.exec(raw); if (!m || +m[2] > 54) { toast('Starting Index like 18.4, or +1.2 for a plus handicap'); return } st = m[1] ? -m[2] : +m[2] }
+    await store.saveProfile(openPlayer, { name: $('pname').value.trim() || P[openPlayer].name, startHI: st }); P = await store.profiles(); await refreshCache(openPlayer); toast('Saved'); render(); return }
+  if (id === 'ppost') { postFor = openPlayer; post.gross = {}; post.total = ''; post.marker = ''; view = 'post'; openPlayer = null; render(); scrollTo(0, 0); return }
+  if (id === 'pdel' && isAdmin()) { if (!armed.pdel) { armed.pdel = Date.now(); render(); setTimeout(() => { if (armed.pdel) { armed = {}; if (view === 'players') render() } }, 4000); return }
+    await store.deleteProfile(openPlayer); P = await store.profiles(); openPlayer = null; armed = {}; toast('Player deleted'); render(); return }
+  if (id === 'addp' && isAdmin()) { const n = $('newp').value.trim().slice(0, 40); if (!n) return;
+    if (Object.values(P).some(p => (p.name || '').toLowerCase() === n.toLowerCase())) { toast('Already on the list'); return }
+    await store.saveProfile('x-' + newId(), { name: n, n: 0, hi: null, updated: Date.now() }); P = await store.profiles(); toast(`${n} added`); render(); return }
+  if (t.dataset.del) { const [uid, sid] = t.dataset.del.split(':'), k = 'del' + sid;
+    if (!armed[k]) { armed = { [k]: 1 }; t.textContent = 'Tap again to delete'; t.classList.add('armed'); setTimeout(() => { delete armed[k] }, 4000); return }
+    try { await store.delScore(uid, sid); if (uid === user.uid) mine = await store.scores(uid); else others[uid] = await store.scores(uid); await refreshCache(uid); toast('Score deleted'); render() }
+    catch (err) { toast('Not deleted: ' + (err.code || err.message)) } return }
+  if (t.dataset.play) { post.play = t.dataset.play; render(); return }
+  if (t.dataset.mode) { post.mode = t.dataset.mode; render(); return }
+  if (id === 'psubmit') { submitPost(); return }
+  if (t.dataset.course) { const c = C.find(x => x.id === t.dataset.course); editCourse = structuredClone(c); render(); return }
+  if (id === 'cadd') { editCourse = { id: 'c-' + newId(), name: '', holes: 18, par: Array(18).fill(''), si: Array(18).fill(''), tees: [{ id: 't1', name: 'White', cr: null, slope: null }], owner: user.uid, isNew: true }; render(); return }
+  if (t.dataset.holes) { readCourseForm(); const n = +t.dataset.holes; editCourse.holes = n; editCourse.par = [...editCourse.par, ...Array(18).fill('')].slice(0, n); editCourse.si = [...editCourse.si, ...Array(18).fill('')].slice(0, n); render(); return }
+  if (id === 'tadd') { readCourseForm(); editCourse.tees.push({ id: 't' + newId(), name: '', cr: null, slope: null }); render(); return }
+  if (t.dataset.tq) { readCourseForm(); const n = t.dataset.tq; editCourse.tees.push({ id: n.toLowerCase() + '-' + newId().slice(-4), name: n, cr: null, slope: null }); render(); return }
+  if (t.dataset.trm != null) { readCourseForm(); editCourse.tees.splice(+t.dataset.trm, 1); render(); return }
+  if (id === 'ccancel') { editCourse = null; render(); return }
+  if (id === 'csave') { readCourseForm(); const errs = courseErrors(editCourse); if (errs.length) { $('cerr').textContent = errs.join(' '); return }
+    const c = { ...editCourse }; delete c.isNew; c.owner = c.id === JEBEL.id ? 'admin' : c.owner || user.uid;
+    c.approved = isAdmin() ? !!$('capprove')?.checked : false;   // a player's change always goes back to the organisers to check
+    try { await store.saveCourse(c); C = await store.courses(); editCourse = null; toast('Course saved'); render() } catch (err) { $('cerr').textContent = 'Not saved: ' + (err.code || err.message) } return }
+});
+
+store.init(async u => { user = u; if (u) await loadAll(); if (u && isAdmin() && view === 'me') view = 'players'; if (u && view === 'players') await loadEveryone(); render() });
+</script>
+</body>
+</html>

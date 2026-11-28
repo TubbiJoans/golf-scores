@@ -122,10 +122,10 @@ h3.rsec{font:700 18px "Barlow Condensed",system-ui,sans-serif;margin:14px 2px 8p
 .egrid small{display:block;font-size:10px;color:var(--mut);margin-bottom:3px;white-space:nowrap}
 .egrid input{width:100%;padding:8px 0;min-height:46px;text-align:center;font:700 20px "Barlow Condensed",system-ui,sans-serif;border-radius:8px}
 .sc tr.erd td{color:var(--mut)}.sc tr.erd td.eb{color:var(--ink);font-weight:700}
-.elink{border:0;background:none;color:var(--g);font:600 13px Inter,system-ui,sans-serif;text-decoration:underline;padding:6px 0;min-height:44px;cursor:pointer;white-space:nowrap}
+.elink{display:inline-flex;align-items:center;border:0;background:none;color:var(--g);font:600 13px Inter,system-ui,sans-serif;text-decoration:underline;padding:6px 0;min-height:44px;cursor:pointer;white-space:nowrap}
 .elb .thru b{font:700 20px/1 "Barlow Condensed",system-ui,sans-serif}
 .elb .proj{margin:0}
-.efoot{display:flex;justify-content:center;margin-top:12px}
+.efoot{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:12px}
 .ehls{margin-bottom:10px}.ehls .hlc b{overflow-wrap:anywhere;line-height:1.05}
 main{max-width:720px;margin:0 auto;padding:14px max(12px,env(safe-area-inset-left)) 40px}
 main>section.show{animation:vin .22s ease-out}
@@ -1613,7 +1613,7 @@ function renderEcl(kind){const el=$('v-ecl');if(kind==='scores')return;eclFollow
       ${r.rs.map((rd,j)=>`<tr class="erd"><td>${adm?`<button class="elink" type="button" data-eedit="${esc(r.id)}" data-rid="${esc(rd.rid)}">${esc(dShort(rd.d))} ✎</button>`:esc(dShort(rd.d))}</td>${par.map((_,i)=>`<td class="${r.best[i].from===j?'eb':''}">${+rd.s[i]||'·'}</td>`).join('')}<td>${rd.s.reduce((a,v)=>a+(+v||0),0)}</td></tr>`).join('')}</table></div>
     </details></li>`).join('')}</ol><p class="note" style="margin:10px 2px 0">Gross = your best score on each hole added up. Net = gross minus 25% of handicap. Lowest wins both; ties are split on countback (holes 7–9, then 4–9, then the 9th). You need at least ${ECL_MIN} rounds to count at the end, and can play up to ${ECL_MAX}. Tap a player to see their cards; the scores in bold are the ones that count.</p>`
     :`<div class="empty"><div class="ill">⭐</div><h2>No cards yet</h2><p>${t<se.from?'The season starts on 1 November.':!cur&&adm?`Add the ${se.name} cards with the button above, one card per player per round.`:'After each round the organiser adds your 9-hole card here. Your best score on every hole builds your eclectic.'}</p></div>`;
-  h+=`<div class="efoot">${cur?`<button class="elink" type="button" data-eyear="${eclY-1}">‹ Last season (${eclSeason(eclY-1).name})</button>`:`<button class="btn ghost" type="button" data-eyear="${eclLiveY}">Back to this season ›</button>`}</div>`;
+  h+=`<div class="efoot"><a class="elink" href="handicap/">Handicaps ›</a>${cur?`<button class="elink" type="button" data-eyear="${eclY-1}">‹ Last season (${eclSeason(eclY-1).name})</button>`:`<button class="btn ghost" type="button" data-eyear="${eclLiveY}">Back to this season ›</button>`}</div>`;
   el.innerHTML=h}
 // save (rd) or delete (rd = null) one card of one player; info = their name and handicap as they are now
 function eclPut(id,info,rid,rd){const base={kind:'eclectic',year:eclY,par:eclPar()};
@@ -2346,7 +2346,7 @@ async function start(){
     fs=fsM;au=auM;const app=appM.initializeApp(firebaseConfig);
     try{db=fs.initializeFirestore(app,{localCache:fs.persistentLocalCache({tabManager:fs.persistentMultipleTabManager()})})}catch{db=fs.getFirestore(app)}
     auth=au.getAuth(app);
-    au.onAuthStateChanged(auth,u=>{user=u;if(u)teamCheck(scFresh);else eform=null;render()});
+    au.onAuthStateChanged(auth,u=>{user=u&&(u.email===EMAIL||u.email===ADMIN)?u:null;if(user)teamCheck(scFresh);else eform=null;render()});
     const slow=setTimeout(()=>net('off'),10000);setTimeout(()=>{ready=true},8000);
     fs.onSnapshot(fs.doc(db,'rounds','setup-lock'),d=>{lockSet(d.exists()?d.data():null);lockChanged()},()=>{});
     fs.onSnapshot(fs.doc(db,'rounds','roster'),s=>{const d=s.exists()&&s.data().players;if(Array.isArray(d)&&d.length){P=d;render('roster')}},()=>{});
