@@ -1535,7 +1535,7 @@ const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMon
 const eclId=p=>fold(pkey(p)).replace(/\s+/g,'-');
 const fmtN=x=>String(+(+x).toFixed(2));
 const dShort=d=>{const m=/^(\d{4})-(\d\d)-(\d\d)$/.exec(d||'');return m?new Date(+m[1],+m[2]-1,+m[3]).toLocaleDateString(undefined,{day:'numeric',month:'short'}):String(d||'')};
-let ECcur={},EC=ECcur,eclLiveY=eclYear(),eclY=eclLiveY,eclOn=false,eclUnsub=null,eform=null,edelArm=0;
+let ECcur={},EC=ECcur,eclLiveY=eclYear(),eclY=eclLiveY,eclOn=false,eclUnsub=null,eclPastUnsub=null,eform=null,edelArm=0;
 const eclPar=()=>((Array.isArray(EC.par)&&EC.par.length===9?EC.par:null)||R.par||DEF.par).map(v=>+v||4);
 const eclCards=c=>Object.entries((c&&c.r)||{}).map(([rid,r])=>({...(r||{}),rid})).filter(r=>Array.isArray(r.s)).sort((a,b)=>String(a.d).localeCompare(String(b.d))||a.rid.localeCompare(b.rid));   // oldest first
 // follow the current season live; if the app is still open when 1 November comes, let go of the old season and follow the new one
@@ -1580,19 +1580,20 @@ function eclFormSum(){const f=eform;if(!f)return '';const vals=f.s.map(v=>+v||0)
   return `Total <b>${vals.reduce((a,v)=>a+v,0)}</b> over ${plur(n,'hole')}${n<9?` (${9-n} with no score)`:''}.${f.id&&rs.length?(better.length?` Improves hole${better.length>1?'s':''} ${better.join(', ')}.`:' No hole improved.'):''}`}
 // kind: 'scores' = a live score came in (nothing to do here); 'force' = the app's own change, always redraw
 function renderEcl(kind){const el=$('v-ecl');if(kind==='scores')return;eclFollow();
+  if(!isAdmin()){eform=null;if(eclY!==eclLiveY&&!Object.values(EC.cards||{}).some(c=>eclCards(c).length)){eclPastStop();eclY=eclLiveY;EC=ECcur}}
   if(kind!=='force'&&el.contains(document.activeElement)&&document.activeElement.closest('#eform'))return;   // a live update never redraws under the organiser's fingers
-  const se=eclSeason(eclY),t=today(),open=t>=se.from&&t<=se.to,over=t>se.to,cur=eclY===eclLiveY,by=eclBy(),rows=eclRows(by),other=eclRows(by==='net'?'gross':'net'),par=eclPar(),adm=isAdmin()&&cur,cards=EC.cards||{};
+  const se=eclSeason(eclY),t=today(),open=t>=se.from&&t<=se.to,over=t>se.to,cur=eclY===eclLiveY,by=eclBy(),rows=eclRows(by),other=eclRows(by==='net'?'gross':'net'),par=eclPar(),adm=isAdmin(),cards=EC.cards||{};
   const nrows=by==='net'?rows:other,grows=by==='net'?other:rows;
   const was=new Set([...el.querySelectorAll('.lb details[open]')].map(d=>d.dataset.id));
   let h=`<div class="ehead"><div><h2>Eclectic ${se.name}</h2><small>1 Nov – 28 Feb · your best score on each hole, from ${ECL_MIN} to ${ECL_MAX} rounds</small></div><span class="echip${open?' on':''}">${t<se.from?'Starts 1 Nov':open?'Open':'Final'}</span></div>`;
-  if(adm&&eform){const f=eform,old=cards[f.id],nm=old&&!P.some(p=>eclId(p)===f.id)?((old.n||'')+' '+(old.l||'')).trim():'';
+  if(adm&&eform){const f=eform,gone=Object.entries(cards).filter(([id,c])=>!P.some(p=>eclId(p)===id)&&eclCards(c).length).map(([id,c])=>({id,nm:((c.n||'')+' '+(c.l||'')).trim()||'Player',n:eclCards(c).length})).sort((a,b)=>a.nm.localeCompare(b.nm));
     h+=`<div class="panel" id="eform"><h2 class="sec">${f.rid?'Change a card':'Add a card'}</h2>
-      <div class="row"><div style="flex:2 1 180px"><label for="eplayer">Player</label><select id="eplayer"${f.rid?' disabled':''}>${f.id?'':`<option value="" selected disabled>Choose a player…</option>`}${nm?`<option value="${esc(f.id)}" selected>${esc(nm)}</option>`:''}${[...P].sort((a,b)=>pkey(a).localeCompare(pkey(b))).map(p=>{const id=eclId(p),n=eclCards(cards[id]).length;return `<option value="${esc(id)}"${id===f.id?' selected':''}${n>=ECL_MAX&&!f.rid?' disabled':''}>${esc(pkey(p))} · ${n}/${ECL_MAX}</option>`}).join('')}</select></div>
-      <div><label for="edate">Date played</label><input id="edate" type="date" min="${se.from}" max="${se.to<t?se.to:t}" value="${esc(f.d)}"></div></div>
+      <div class="row"><div style="flex:2 1 180px"><label for="eplayer">Player</label><select id="eplayer"${f.rid?' disabled':''}>${f.id?'':`<option value="" selected disabled>Choose a player…</option>`}${gone.map(g=>`<option value="${esc(g.id)}"${g.id===f.id?' selected':''}${g.n>=ECL_MAX&&!f.rid?' disabled':''}>${esc(g.nm)} · ${g.n}/${ECL_MAX} (not on the list now)</option>`).join('')}${[...P].sort((a,b)=>pkey(a).localeCompare(pkey(b))).map(p=>{const id=eclId(p),n=eclCards(cards[id]).length;return `<option value="${esc(id)}"${id===f.id?' selected':''}${n>=ECL_MAX&&!f.rid?' disabled':''}>${esc(pkey(p))} · ${n}/${ECL_MAX}</option>`}).join('')}</select></div>
+      <div><label for="edate">Date played</label><input id="edate" type="date" min="${se.from}" max="${se.to<t?se.to:t}" value="${esc(f.d)}"></div>${!over?'':`<div style="flex:0 1 110px"><label for="ehcp">Handicap then</label><input id="ehcp" inputmode="decimal" autocomplete="off" value="${esc(f.h)}" aria-label="Handicap that season"></div>`}</div>
       <div class="egrid">${par.map((v,i)=>`<label><span>${i+1}</span><small>par ${v}</small><input data-es="${i}" inputmode="numeric" maxlength="2" autocomplete="off" enterkeyhint="next" value="${esc(f.s[i]||'')}" aria-label="Hole ${i+1}"></label>`).join('')}</div>
       <p class="note" id="esum">${eclFormSum()}</p>
       <div class="row"><button class="btn ghost" id="ecancel" type="button">Cancel</button>${f.rid?`<button class="btn warn" id="edel" type="button">Delete card</button>`:''}<button class="btn" id="esave" type="button">Save card</button></div></div>`}
-  else if(adm)h+=`<button class="btn" id="eadd" type="button" style="width:100%;margin-bottom:12px">＋ Add a player’s card</button>`;
+  else if(adm)h+=`${cur?'':`<p class="note" style="margin:0 2px 8px">You are adding cards to the ${se.name} season. Net uses the handicap each player had then.</p>`}<button class="btn" id="eadd" type="button" style="width:100%;margin-bottom:12px">＋ Add a player’s card${cur?'':` to ${se.name}`}</button>`;
   if(isAdmin()&&!eform&&rows.length)h+=`<div class="row" style="margin:-4px 0 12px"><a class="btn wa" id="ewa" href="#" target="_blank" rel="noopener">Share update on WhatsApp</a><a class="btn ghost copy" id="ecopy" href="#" role="button" style="flex:0 0 auto">Copy</a></div>`;
   // the two leaders, then the table the viewer picked (net or gross)
   const lead=(rs,lab,val,c)=>{const top=rs.filter(r=>r.rank===1),cbk=rs.some(r=>r.onCb&&r.rank===2);
@@ -1611,42 +1612,50 @@ function renderEcl(kind){const el=$('v-ecl');if(kind==='scores')return;eclFollow
       <tr><td>Best</td>${r.best.map((b,i)=>`<td class="${ring(b.v,par[i])}"><span>${b.v??'–'}</span></td>`).join('')}<td class="tot">${r.gross}</td></tr>
       ${r.rs.map((rd,j)=>`<tr class="erd"><td>${adm?`<button class="elink" type="button" data-eedit="${esc(r.id)}" data-rid="${esc(rd.rid)}">${esc(dShort(rd.d))} ✎</button>`:esc(dShort(rd.d))}</td>${par.map((_,i)=>`<td class="${r.best[i].from===j?'eb':''}">${+rd.s[i]||'·'}</td>`).join('')}<td>${rd.s.reduce((a,v)=>a+(+v||0),0)}</td></tr>`).join('')}</table></div>
     </details></li>`).join('')}</ol><p class="note" style="margin:10px 2px 0">Gross = your best score on each hole added up. Net = gross minus 25% of handicap. Lowest wins both; ties are split on countback (holes 7–9, then 4–9, then the 9th). You need at least ${ECL_MIN} rounds to count at the end, and can play up to ${ECL_MAX}. Tap a player to see their cards; the scores in bold are the ones that count.</p>`
-    :`<div class="empty"><div class="ill">⭐</div><h2>No cards yet</h2><p>${t<se.from?'The season starts on 1 November.':'After each round the organiser adds your 9-hole card here. Your best score on every hole builds your eclectic.'}</p></div>`;
+    :`<div class="empty"><div class="ill">⭐</div><h2>No cards yet</h2><p>${t<se.from?'The season starts on 1 November.':!cur&&adm?`Add the ${se.name} cards with the button above, one card per player per round.`:'After each round the organiser adds your 9-hole card here. Your best score on every hole builds your eclectic.'}</p></div>`;
   h+=`<div class="efoot">${cur?`<button class="elink" type="button" data-eyear="${eclY-1}">‹ Last season (${eclSeason(eclY-1).name})</button>`:`<button class="btn ghost" type="button" data-eyear="${eclLiveY}">Back to this season ›</button>`}</div>`;
   el.innerHTML=h}
 // save (rd) or delete (rd = null) one card of one player; info = their name and handicap as they are now
 function eclPut(id,info,rid,rd){const base={kind:'eclectic',year:eclY,par:eclPar()};
-  if(LOCAL){const d={...ls.get('gs-demo-E-'+eclY,{}),...base};d.cards={...(d.cards||{})};const c={...(d.cards[id]||{}),...info};c.r={...(c.r||{})};if(rd)c.r[rid]=rd;else delete c.r[rid];d.cards[id]=c;ls.set('gs-demo-E-'+eclY,d);ECcur=EC=d;return}
+  if(LOCAL){const d={...ls.get('gs-demo-E-'+eclY,{}),...base};d.cards={...(d.cards||{})};const c={...(d.cards[id]||{}),...info};c.r={...(c.r||{})};if(rd)c.r[rid]=rd;else delete c.r[rid];d.cards[id]=c;ls.set('gs-demo-E-'+eclY,d);EC=d;if(eclY===eclLiveY)ECcur=d;return}
   fs.setDoc(fs.doc(db,'rounds','eclectic-'+eclY),{...base,cards:{[id]:{...info,r:{[rid]:rd||fs.deleteField()}}}},{merge:true}).catch(e=>toast('Not saved: '+(e.code||e.message)+(String(e.code).includes('permission')?' (sign in as organiser)':''),5000))}
-async function eclGo(y){eclFollow();if(y===eclLiveY){eclY=y;EC=ECcur;eform=null;renderEcl('force');scrollTo(0,0);return}
+function eclPastStop(){if(eclPastUnsub){eclPastUnsub();eclPastUnsub=null}}
+async function eclGo(y){eclFollow();if(y===eclLiveY){eclPastStop();eclY=y;EC=ECcur;eform=null;renderEcl('force');scrollTo(0,0);return}
   try{const d=LOCAL?ls.get('gs-demo-E-'+y,null):(await fs.getDoc(fs.doc(db,'rounds','eclectic-'+y))).data();
-    if(!d||!Object.values(d.cards||{}).some(c=>eclCards(c).length)){toast(`No eclectic saved for ${eclSeason(y).name}.`,3000);return}
-    eclY=y;EC=d;eform=null;renderEcl('force');scrollTo(0,0)}catch{toast('Could not load that season. Check your signal and try again.',3500)}}
+    if(!isAdmin()&&(!d||!Object.values(d.cards||{}).some(c=>eclCards(c).length))){toast(`No eclectic saved for ${eclSeason(y).name}.`,3000);return}
+    eclPastStop();eclY=y;EC=d||{};eform=null;renderEcl('force');scrollTo(0,0);
+    if(!LOCAL)eclPastUnsub=fs.onSnapshot(fs.doc(db,'rounds','eclectic-'+y),s=>{if(eclY!==y)return;EC=s.exists()?s.data():{};if(view==='ecl')renderEcl()},()=>{})}
+  catch{toast('Could not load that season. Check your signal and try again.',3500)}}
 setInterval(()=>{if(eclOn&&eclYear()!==eclLiveY&&!eform){eclFollow();if(view==='ecl')renderEcl('force')}},60000);   // a phone left open into 1 November moves on by itself
 $('v-ecl').addEventListener('input',e=>{const t=e.target,f=eform;if(!f)return;
   if(t.id==='edate')f.d=t.value;
+  else if(t.id==='ehcp')f.h=t.value;
   else if(t.dataset.es!=null){const i=+t.dataset.es,v=t.value.replace(/\D/g,'').slice(0,2);if(v!==t.value)t.value=v;f.s[i]=v;$('esum').innerHTML=eclFormSum();
     if((v.length===1&&v!=='1')||v.length===2){const nx=document.querySelector(`[data-es="${i+1}"]`);if(nx){nx.focus();nx.select()}else t.blur()}}});   // one digit is enough unless it starts with 1 (10 and up)
-$('v-ecl').addEventListener('change',e=>{if(e.target.id==='eplayer'&&eform){eform.id=e.target.value;$('esum').innerHTML=eclFormSum()}});
+$('v-ecl').addEventListener('change',e=>{if(e.target.id==='eplayer'&&eform){eform.id=e.target.value;$('esum').innerHTML=eclFormSum();
+  if($('ehcp')){const c=(EC.cards||{})[eform.id],pl=P.find(p=>eclId(p)===eform.id);eform.h=c&&c.h!=null?fmtH(c.h):pl?fmtH(+pl.h||0):'';$('ehcp').value=eform.h}}});
 $('v-ecl').addEventListener('click',e=>{const t=e.target.closest('button,a');if(!t)return;
   if(t.dataset.eyear){eclGo(+t.dataset.eyear);return}
   if(t.dataset.eby){buzz();ls.set('gs-ecl-by',t.dataset.eby);renderEcl('force');return}
   if(t.id==='ewa'){if(!isAdmin()){e.preventDefault();return}t.href=waUrl(eclMsg());return}                    // the link opens after this handler, with the new href
   if(t.id==='ecopy'){e.preventDefault();if(isAdmin())copyText(eclMsg(),'Update copied. Paste it into the WhatsApp group.');return}
-  {const y0=eclLiveY,had=!!eform;eclFollow();if(eclLiveY!==y0){renderEcl('force');if(had)toast(`The ${eclSeason(eclLiveY).name} season has started, so that card was not saved. Add it again if it belongs to the new season.`,6000);return}}
-  if(!isAdmin()||eclY!==eclLiveY)return;const se=eclSeason(eclY),td=today();
-  if(t.id==='eadd'){eform={id:'',d:td>se.to?se.to:td<se.from?se.from:td,s:Array(9).fill(''),rid:null};renderEcl('force');return}
+  {const y0=eclLiveY,had=!!eform&&eclY===y0;eclFollow();if(eclLiveY!==y0){renderEcl('force');if(had)toast(`The ${eclSeason(eclLiveY).name} season has started, so that card was not saved. Add it again if it belongs to the new season.`,6000);return}}
+  if(!isAdmin())return;const se=eclSeason(eclY),td=today(),past=td>se.to;   // past: the season is over, so its net uses the handicap saved with the cards
+  const hThen=id=>{const c=(EC.cards||{})[id],pl=P.find(p=>eclId(p)===id);return c&&c.h!=null?fmtH(c.h):pl?fmtH(+pl.h||0):''};   // a past season: the handicap already on their cards, else today's
+  if(t.id==='eadd'){eform={id:'',d:td>se.to?se.to:td<se.from?se.from:td,s:Array(9).fill(''),rid:null,h:''};renderEcl('force');return}
   if(t.id==='ecancel'){eform=null;renderEcl('force');return}
   if(t.dataset.eedit){const rd=eclCards((EC.cards||{})[t.dataset.eedit]).find(r=>r.rid===t.dataset.rid);if(!rd)return;
-    eform={id:t.dataset.eedit,d:rd.d,s:rd.s.map(v=>+v?String(v):''),rid:rd.rid};edelArm=0;renderEcl('force');scrollTo({top:0,behavior:reduce?'auto':'smooth'});return}
+    eform={id:t.dataset.eedit,d:rd.d,s:rd.s.map(v=>+v?String(v):''),rid:rd.rid,h:past?hThen(t.dataset.eedit):''};edelArm=0;renderEcl('force');scrollTo({top:0,behavior:reduce?'auto':'smooth'});return}
   const f=eform;if(!f)return;const old=(EC.cards||{})[f.id]||{},have=eclCards(old),pl=P.find(p=>eclId(p)===f.id);
-  const info={n:pl?pl.n:old.n||'',l:pl?pl.l||'':old.l||'',h:pl?+pl.h||0:+old.h||0};
+  const hIn=String(f.h??'').trim().replace(',','.').replace(/^[+−–]/,'-'),hv=past?(hIn===''?(old.h!=null?+old.h:pl?+pl.h||0:0):+hIn):null;   // '+2' is a plus handicap, stored as -2 like everywhere else
+  const info={n:pl?pl.n:old.n||'',l:pl?pl.l||'':old.l||'',h:past?hv:pl?+pl.h||0:+old.h||0};
   if(t.id==='edel'){if(!f.rid)return;if(Date.now()-edelArm>4000){edelArm=Date.now();t.classList.replace('warn','armed');t.textContent='Tap again to delete';return}
-    eclPut(f.id,info,f.rid,null);eform=null;renderEcl('force');toast('Card deleted');return}
+    eclPut(f.id,past?{...info,h:old.h!=null?+old.h:pl?+pl.h||0:0}:info,f.rid,null);eform=null;renderEcl('force');toast('Card deleted');return}
   if(t.id==='esave'){const vals=f.s.map(v=>+v||0);
     if(!f.id){toast('Choose the player first');$('eplayer')?.focus();return}
     if(!/^\d{4}-\d\d-\d\d$/.test(f.d)||f.d<se.from||f.d>se.to){toast(`The date has to be in the season: 1 Nov ${eclY} to 28 Feb ${eclY+1}.`,4000);return}
     if(f.d>td){toast('That date is in the future.');return}
+    if(past&&(!isFinite(hv)||hv<-10||hv>54)){toast('Check the handicap: a number from +10 to 54.',3500);$('ehcp')?.focus();return}
     if(!vals.some(v=>v>0)){toast('Type at least one hole’s score');return}
     const bad=vals.findIndex(v=>v>15);if(bad>=0){toast(`Check hole ${bad+1}: ${vals[bad]} looks too high.`);return}
     if(!f.rid&&have.length>=ECL_MAX){toast(`${pl?pkey(pl):'This player'} already has ${ECL_MAX} rounds in.`,3500);return}
@@ -2322,7 +2331,7 @@ $('v-setup').addEventListener('click',async e=>{const t=e.target.closest('button
     t.classList.remove('armed');t.textContent='Clear all scores';if(!setupWriteOk())return;
     if(LOCAL){S={};ls.set('gs-demo-S',S);ls.set('gs-demo-C',{});C={};teamCheck(true);feed=[];saveFeed();render();toast('Scores cleared');return}
     try{await Promise.all(Object.keys(S).map(id=>fs.deleteDoc(fs.doc(db,'scores',id))));feed=[];saveFeed();toast('Scores cleared')}catch(err){toast('Not cleared: '+(err.code||err.message))}}
-  else if(t.id==='out'){if($('treqbox'))$('treqbox').hidden=true;await Promise.race([Promise.all([lockRelease(),teamRelease(myPair())]),new Promise(r=>setTimeout(r,1500))]);lockWas=null;setupDirty=false;setupStale=false;if(LOCAL){user=null;render()}else{await au.signOut(auth)}}});
+  else if(t.id==='out'){if($('treqbox'))$('treqbox').hidden=true;await Promise.race([Promise.all([lockRelease(),teamRelease(myPair())]),new Promise(r=>setTimeout(r,1500))]);lockWas=null;setupDirty=false;setupStale=false;eform=null;if(LOCAL){user=null;render()}else{await au.signOut(auth)}}});
 setInterval(()=>{if(view==='board'&&!document.hidden)renderBoard()},30000);
 
 // ---------- start ----------
@@ -2337,7 +2346,7 @@ async function start(){
     fs=fsM;au=auM;const app=appM.initializeApp(firebaseConfig);
     try{db=fs.initializeFirestore(app,{localCache:fs.persistentLocalCache({tabManager:fs.persistentMultipleTabManager()})})}catch{db=fs.getFirestore(app)}
     auth=au.getAuth(app);
-    au.onAuthStateChanged(auth,u=>{user=u;if(u)teamCheck(scFresh);render()});
+    au.onAuthStateChanged(auth,u=>{user=u;if(u)teamCheck(scFresh);else eform=null;render()});
     const slow=setTimeout(()=>net('off'),10000);setTimeout(()=>{ready=true},8000);
     fs.onSnapshot(fs.doc(db,'rounds','setup-lock'),d=>{lockSet(d.exists()?d.data():null);lockChanged()},()=>{});
     fs.onSnapshot(fs.doc(db,'rounds','roster'),s=>{const d=s.exists()&&s.data().players;if(Array.isArray(d)&&d.length){P=d;render('roster')}},()=>{});
