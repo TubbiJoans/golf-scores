@@ -267,6 +267,8 @@ a.btn.copy{display:flex;align-items:center;justify-content:center;text-decoratio
 .btn.wa{text-align:center}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:end}
 .row>*{flex:1 1 140px}
+.sfoot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:16px 0 4px;color:var(--mut);font-size:14px}.sfoot .btn{flex:none;min-height:44px}
+.orgl{border:1px solid var(--g3);border-radius:12px;overflow:hidden}.orgi{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 6px 6px 12px;font-weight:600}.orgi+.orgi{border-top:1px solid var(--g3)}.orgi .btn{min-height:44px;padding:6px 12px;flex:none}.orgi small{font-weight:400;color:var(--mut)}
 .row>.ttime{flex:0 1 190px;min-width:170px}
 .ttime .tt{display:flex;gap:6px}.ttime .tt input{flex:1;min-width:0}.ttime .tt .btn{flex:0 0 auto;padding:0 12px}
 .hole{background:var(--card);border-radius:14px;margin-bottom:10px;box-shadow:0 1px 0 var(--line);border-left:6px solid var(--c);overflow:hidden;scroll-margin-top:70px}
@@ -955,7 +957,13 @@ const firebaseConfig = {
 {
 const SDK='https://www.gstatic.com/firebasejs/10.12.2/';
 const EMAIL='scorer@sifah.golf',ADMIN='admin@sifah.golf';
-const isAdmin=()=>!!user&&user.email===ADMIN;
+// Everyone has their own login (username@sifah.golf, typed as just the username). Any login can score; the shared scorer PIN still works.
+// Organisers: admin@sifah.golf always, plus the usernames on the organiser list (rounds/organisers), which organisers edit in Setup.
+let ORGS=[];
+const acct=v=>{v=String(v||'').trim().toLowerCase().replace(/\s+/g,'');return !v?'':v.includes('@')?v:v+'@sifah.golf'};
+const uname=e=>String(e||'').replace(/@sifah\.golf$/i,'');
+const orgsClean=a=>Array.isArray(a)?[...new Set(a.filter(x=>typeof x==='string').map(acct).filter(x=>x!==EMAIL&&/^[^@\s]+@[^@\s]+$/.test(x)))].slice(0,30):[];
+const isAdmin=()=>!!user&&(String(user.email||'').toLowerCase()===ADMIN||ORGS.includes(String(user.email||'').toLowerCase()));
 const DEF={title:'Friday Golf',course:'Jebel Sifah · Front 9',par:[4,4,5,4,5,3,4,3,4],si:[13,1,5,15,9,11,3,17,7],pairs:[]};
 const ROSTER=[["Abs", "Al Balushi", 28], ["Adrian", "Clifford", 28], ["Alan", "Hill", 26.2], ["Bradley", "Viljoen", 19], ["Chris", "MacDonald", 22], ["Elizabeth", "Shearer", 36], ["Emma", "Fenton", 36], ["Fiona", "Hanks", 36], ["Frans", "Kohler", 22], ["Freek", "van Dijk", 28], ["Gay", "Clifford", 36], ["Gerry", "Woods", 10], ["Heiderose", "Mossen", 31], ["Hudson", "Kemp", 14], ["Iain", "Watford", 23], ["Jaime", "Kemp", 36], ["James", "Thompson", 15], ["Jenna", "Viljoen", 36], ["Johnny", "Agapie", 28], ["Neil", "McLoughlin", 28], ["Ninien", "Blignault", 30], ["Petra", "Markt", 31.4], ["Saif", "Al Abdullatif", 28], ["Sheldon", "Kemp", 18], ["Stephen", "Martin", 28], ["Tim", "Fenton", 10], ["Vanessa", "Jackson", 21], ["Willie", "Fourie", 28], ["Yvonne", "Grant", 30], ["Jonathan", "Grant", 25], ["Ben", "Martin", 28], ["Mark", "Geilenkirchen", 28], ["Esther", "Grootenboer", 28], ["Erwen", "De La Cruz", 18], ["Fred", "van Nieuwenhuizen", 28], ["Brian", "Wilson", 26], ["Jenny", "Wilson", 36], ["Ed", "Price", 28], ["Jan-Willen", "van Lienden", 18.5], ["Kamil", "Weinhold", 28], ["Gina", "Sanda", 25], ["Cristian", "Sanda", 15], ["Chantal", "Vlaarkamp", 36], ["Chon", "Humtsoe", 22]];
 const $=id=>document.getElementById(id);
@@ -1351,8 +1359,9 @@ function sparks({x,y,n,cols,pow,up=0,dx=0,round=false}){
   fxAdd((W,H,dpr)=>[...Array(n)].map(()=>{const a=Math.random()*Math.PI*2,s=(.35+Math.random()*.65)*pow*dpr;
     return{x:x*dpr,y:y*dpr,vx:Math.cos(a)*s+dx*dpr,vy:Math.sin(a)*s-up*dpr,g:(round?.18:.32)*dpr,dr:.975,life:round?1.9:3.2,r:Math.random()*Math.PI,vr:(Math.random()-.5)*.35,
       w:(round?4+Math.random()*4:6+Math.random()*7)*dpr,h:(4+Math.random()*5)*dpr,c:cols[Math.random()*cols.length|0],round}}))}
-function pinForm(msg,role='scorer'){const a=role==='admin';return `<div class="panel"><h2 class="sec">${a?'Organiser sign-in':'Scorer sign-in'}</h2><p class="note" style="margin:0 0 10px">${msg}</p>
-  <form class="row pinf" data-role="${role}"><div><label for="pin-${role}">${a?'Admin password':'Round PIN'}</label><input id="pin-${role}" type="password" autocomplete="current-password" required></div><button class="btn" style="flex:0 0 auto">Unlock</button></form></div>`}
+function pinForm(msg,role='scorer'){const a=role==='admin';return `<div class="panel"><h2 class="sec">${a?'Organiser sign-in':'Sign in to score'}</h2><p class="note" style="margin:0 0 10px">${msg}</p>
+  <form class="row pinf" data-role="${role}"><div style="flex-basis:100%"><label for="user-${role}">Your username</label><input id="user-${role}" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="${a?'e.g. bradley (empty: admin login)':'e.g. bradley (empty: scorer PIN)'}"></div>
+  <div><label for="pin-${role}">${a?'Password':'Password or scorer PIN'}</label><input id="pin-${role}" type="password" autocomplete="current-password" required></div><button class="btn" style="flex:0 0 auto">Unlock</button></form></div>`}
 const pairGet=()=>{if(LOCAL)try{const v=sessionStorage.getItem('gs-pair');if(v!==null)return JSON.parse(v)}catch{}return ls.get('gs-pair',null)};
 const pairSet=v=>{if(LOCAL)try{sessionStorage.setItem('gs-pair',JSON.stringify(v));return}catch{}ls.set('gs-pair',v)};
 const myPair=()=>{const m=pairGet();return R.pairs.some(p=>p.id===m)?m:null};
@@ -1405,9 +1414,10 @@ function reqShow(){const m=myPair(),r=m&&teamBy(m)?.dev===DEV?teamReq(m):null,on
     <div class="row"><button class="btn ghost" id="tno" type="button">Decline</button><button class="btn" id="tyes" type="button">Accept</button></div>`;
   el.hidden=false;try{navigator.vibrate&&navigator.vibrate([60,60,60])}catch{}
   if(swapped){el.querySelectorAll('button').forEach(b=>b.disabled=true);setTimeout(()=>el.querySelectorAll('button').forEach(b=>b.disabled=false),1200)}}
-function renderScore(){
+function renderScore(){renderScore0();const el=$('v-score');if(user&&user.email&&user.email!==EMAIL&&!$('sfoot'))el.insertAdjacentHTML('beforeend',`<div class="sfoot" id="sfoot"><span>Signed in as <b>${esc(uname(user.email))}</b></span><button class="btn ghost" id="sout" type="button">Sign out</button></div>`)}
+function renderScore0(){
   const el=$('v-score');
-  if(!user){el.innerHTML=pinForm('Enter the scorer PIN to record scores. Anyone can view the leaderboard without it.');return}
+  if(!user){el.innerHTML=pinForm('Sign in with your own username and password, or leave the username empty and use the scorer PIN. Anyone can view the leaderboard without signing in.');return}
   if(!R.pairs.length){el.innerHTML=`<div class="empty"><div class="ill">📝</div><h2>No pairs yet</h2><p>Wait for the organiser to draw the teams in <b>Setup</b>, then pick your pair here.</p></div>`;return}
   {const bad=fmtBadNow();if(bad){el.innerHTML=`<div class="slock busy" role="status"><b>⏸ Scoring is paused</b>${esc(curFmt().name)} can’t be played with today’s teams (${esc(bad.why.toLowerCase())}). The organiser needs to choose another format in Setup.</div>`;return}}
   if(want&&!R.pairs.some(x=>x.id===want))want=null;
@@ -1661,10 +1671,15 @@ $('v-ecl').addEventListener('click',e=>{const t=e.target.closest('button,a');if(
     if(!f.rid&&have.length>=ECL_MAX){toast(`${pl?pkey(pl):'This player'} already has ${ECL_MAX} rounds in.`,3500);return}
     eclPut(f.id,info,f.rid||newId(),{d:f.d,s:vals});
     const n=have.length+(f.rid?0:1);eform=null;renderEcl('force');toast(`${info.n||'Card'}’s card saved (${n} of ${ECL_MAX}).`,3000)}});
+function orgsHtml(){const me=String(user?.email||'').toLowerCase();
+  return ORGS.length?`<div class="orgl">${ORGS.map(e=>`<div class="orgi"><span>${esc(uname(e))}${e===me?' <small>(you)</small>':''}</span>${e===me?'':`<button class="btn ghost" type="button" data-orgdel="${esc(e)}">Remove</button>`}</div>`).join('')}</div>`:'<p class="note" style="margin:0">No personal organiser logins yet.</p>'}
+function orgsSave(list){list=orgsClean(list);
+  if(LOCAL){ORGS=list;ls.set('gs-demo-O',list);const o=$('orgs');if(o)o.innerHTML=orgsHtml();return Promise.resolve(true)}
+  return fs.setDoc(fs.doc(db,'rounds','organisers'),{emails:list,at:Date.now()}).then(()=>true,e=>{toast('Not saved: '+(e.code||e.message),4000);return false})}
 function renderSetup(){
   const el=$('v-setup');
-  if(!isAdmin()){el.innerHTML=pinForm('Setup is for organisers only: pairs, handicaps, players, archiving and clearing scores. The scorer PIN does not open it.','admin');return}
-  setupDirty=false;const on=$('orgname'),onV=on&&on.value,onF=!!on&&document.activeElement===on;
+  if(!isAdmin()){const me=user&&user.email&&user.email!==EMAIL;el.innerHTML=pinForm((me?`You're signed in as <b>${esc(uname(user.email))}</b>, which isn't an organiser. `:'')+'Setup is for organisers only: pairs, handicaps, players, archiving and clearing scores. The scorer PIN does not open it.','admin')+(me?`<div class="sfoot"><span>Signed in as <b>${esc(uname(user.email))}</b></span><button class="btn ghost" id="out" type="button">Sign out</button></div>`:'');return}
+  setupDirty=false;const on=$('orgname'),onV=on&&on.value,onF=!!on&&document.activeElement===on,oa=$('orgadd'),oaV=oa&&oa.value,oaF=!!oa&&document.activeElement===oa;
   const keys=new Set(P.map(pkey));for(const k of[...drawSel])if(!keys.has(k))drawSel.delete(k);   // drop ticks for players no longer on the list
   const scored=R.pairs.some(p=>Object.values(S[p.id]||{}).some(v=>v!=null));
   el.innerHTML=`<div id="slock" class="slock" role="status" hidden></div>
@@ -1708,8 +1723,12 @@ function renderSetup(){
   <div class="panel"><h2 class="sec">Other</h2>
     <label for="orgname">Your name</label><input id="orgname" placeholder="e.g. Bradley" autocomplete="off" autocapitalize="words" value="${esc(orgName())}">
     <p class="note" style="margin:4px 0 10px">Shown to another organiser who opens Setup while you're in it.</p>
-    <div class="row"><button class="btn ghost" id="out" type="button">Lock (sign out)</button></div><p class="note">Signed in as organiser. You can also enter scores.</p></div>`;
+    <h2 class="sec" style="margin-top:16px">Organisers</h2><p class="note" style="margin:0 0 8px">These logins can open Setup, type in Eclectic cards and post handicaps for anyone. The shared organiser login (admin) always can.</p>
+    <div id="orgs">${orgsHtml()}</div>
+    <div class="row" style="margin-top:8px"><input id="orgadd" placeholder="Username, e.g. bradley" autocapitalize="none" autocorrect="off" spellcheck="false" aria-label="Organiser username to add"><button class="btn ghost" id="orgaddb" type="button" style="flex:0 0 auto">Add</button></div>
+    <div class="row" style="margin-top:16px"><button class="btn ghost" id="out" type="button">Lock (sign out)</button></div><p class="note">Signed in as organiser${user&&user.email&&user.email!==ADMIN?` (${esc(uname(user.email))})`:''}. You can also enter scores.</p></div>`;
   if(on){const n=$('orgname');n.value=onV;if(onF)n.focus()}
+  if(oa&&oaV){const n=$('orgadd');if(n){n.value=oaV;if(oaF)n.focus()}}
   showDraft();updArch();lockChanged();lockTick();
 }
 // ---------- Setup locks ----------
@@ -2224,14 +2243,19 @@ document.addEventListener('click',e=>{const id=e.target.id;if(id!=='tyes'&&id!==
   $('treqbox').hidden=true;if(!r||teamBy(m)?.dev!==DEV)return;
   if(id==='tyes'){handed=m;teamPut(m,{by:{dev:r.dev,at:Date.now()},req:null});teamCheck(false);render()}
   else{teamPut(m,{req:{...r,no:1}});toast('Declined. They’ve been told.')}});
-document.addEventListener('submit',async e=>{const fm=e.target;if(!fm.classList.contains('pinf'))return;e.preventDefault();const pin=fm.querySelector('input').value,admin=fm.dataset.role==='admin';fm.querySelector('input').blur();
+document.addEventListener('submit',async e=>{const fm=e.target;if(!fm.classList.contains('pinf'))return;e.preventDefault();
+  const pw=fm.querySelector('input[type=password]'),un=fm.querySelector('[id^=user-]'),pin=pw.value,admin=fm.dataset.role==='admin',who=acct(un&&un.value);pw.blur();if(un)un.blur();
+  const email=who||(admin?ADMIN:EMAIL);
   setupDirty=false;
-  if(LOCAL){user={demo:1,email:admin?ADMIN:EMAIL};teamCheck(true);render();return}
-  try{await au.signInWithEmailAndPassword(auth,admin?ADMIN:EMAIL,pin.trim());toast(admin?'Organiser unlocked':'Unlocked')}catch(err){const c=err&&err.code||'';
-    toast(/network/.test(c)?'No signal: sign-in needs internet the first time. Try again when you have a connection.':/invalid-credential|wrong-password|user-not-found|invalid-login/.test(c)?(admin?'Wrong admin password (':'Wrong PIN (')+c.replace('auth/','')+')':'Sign-in problem: '+(c||err.message),3800)}});
+  const after=()=>{if(admin&&!isAdmin())toast(`${uname(email)} isn't an organiser. An organiser can add you in Setup.`,4500);else toast(admin?'Organiser unlocked':'Unlocked')};
+  if(LOCAL){user={demo:1,email};teamCheck(true);render();if(who)after();return}
+  try{await au.signInWithEmailAndPassword(auth,email,who?pin:pin.trim());after()}catch(err){const c=err&&err.code||'';
+    toast(/network/.test(c)?'No signal: sign-in needs internet the first time. Try again when you have a connection.':/invalid-credential|wrong-password|user-not-found|invalid-login|invalid-email/.test(c)?(who?'Wrong username or password (':admin?'Wrong admin password (':'Wrong PIN (')+c.replace('auth/','')+')':'Sign-in problem: '+(c||err.message),3800)}});
 $('v-score').addEventListener('change',e=>{if(e.target.id==='pairsel'){e.target.blur();fxClear();pickTeam(e.target.value)}});
 $('v-score').addEventListener('input',e=>{if(e.target.id==='tname')ls.set('gs-my-name',e.target.value.trim().slice(0,30))});
-$('v-score').addEventListener('click',e=>{const id=e.target.id;
+$('v-score').addEventListener('click',async e=>{const id=e.target.id;
+  if(id==='sout'&&e.target.dataset.arm!=='1'){const b=e.target;b.dataset.arm='1';b.textContent='Tap again to sign out';b.classList.replace('ghost','warn');setTimeout(()=>{if(b.isConnected){b.dataset.arm='';b.textContent='Sign out';b.classList.replace('warn','ghost')}},4000);return}
+  if(id==='sout'){await Promise.race([teamRelease(myPair()),new Promise(r=>setTimeout(r,1500))]);eform=null;if(LOCAL){user=null;render()}else{await au.signOut(auth)}toast('Signed out');return}
   if(id==='tstart'&&want){pickTeam(want);return}
   if(id==='tcancel'&&want){if(teamReq(want)?.dev===DEV)teamPut(want,{req:null});want=null;render();return}
   if(id==='treq'&&want){const n=($('tname').value||'').trim().slice(0,30);if(!n){toast('Type your name so they know who is asking');$('tname').focus();return}
@@ -2248,7 +2272,7 @@ $('v-score').addEventListener('click',e=>{const id=e.target.id;
   const k=b.dataset.k,h=parseInt(k),par=+R.par[h-1]||4,cur=S[pid]?.[k];let v;
   if(+b.dataset.d>0)v=cur==null?par:cur===0?1:Math.min(cur+1,15);else v=cur==null?par:cur===0?null:cur===1?0:cur-1;   // empty: − shows par first, then counts down
   if(v!==(cur??null))setScore(pid,k,v)});
-$('v-setup').addEventListener('input',e=>{const t=e.target;if(t.closest('.pinf')||t.id==='orgname'||t.closest('#fmtbox'))return;
+$('v-setup').addEventListener('input',e=>{const t=e.target;if(t.closest('.pinf')||t.id==='orgname'||t.id==='orgadd'||t.closest('#fmtbox'))return;
   if(t.closest('#wl')){if(t.id==='wltext')wl.text=t.value;const u=wl.res&&wl.res.unk[+(t.dataset.wln??t.dataset.wlh)];if(u){if(t.dataset.wln!=null){u.typed=t.value;const sg=document.querySelector(`[data-wls="${t.dataset.wln}"]`);if(sg)sg.innerHTML=wlSugHtml(t.dataset.wln,t.value)}else u.h=t.value}return}   /* the pasted list is a helper, not an unsaved Setup change */
  if(sharedIds&&t.closest('.pair')){sharedIds=null;showDraft()}
   if(t.id==='dsearch'){dq=t.value.trim().toLowerCase();document.querySelectorAll('#dlist .chk').forEach(l=>l.hidden=dq&&!l.dataset.q.includes(dq));return}
@@ -2263,6 +2287,15 @@ $('v-setup').addEventListener('input',e=>{const t=e.target;if(t.closest('.pinf')
 $('v-setup').addEventListener('change',e=>{const t=e.target,f=t.dataset.f;
   if(t.dataset.fmix!=null){fsel.mix[+t.dataset.fmix]=t.value;fsel.res=fsel.mix.every(Boolean)?E.mkFormat(fsel.mix.slice(),'hand'):null;fsel.note='';fmtDraw();return}if(t.id==='orgname'){ls.set('gs-org-name',t.value.trim().slice(0,30));if(lockMine())lockClaim();return}if(/^p[1-5]$/.test(f||'')){const m=findP(t.value);if(m)t.value=sugName(m)}});
 $('v-setup').addEventListener('click',async e=>{const t=e.target.closest('button')||e.target;
+  if(t.id==='orgaddb'){const i=$('orgadd'),v=acct(i&&i.value);if(!v){toast('Type their username first');return}
+    if(!/^[^@\s]+@[^@\s]+$/.test(v)){toast('That doesn’t look like a username');return}
+    if(v===EMAIL){toast('The shared scorer login can’t be an organiser');return}
+    if(ORGS.length>=30&&!ORGS.includes(v)){toast('The organiser list is full (30). Remove someone first.',3500);return}
+    if(v===ADMIN||ORGS.includes(v)){toast(`${uname(v)} is already an organiser`);return}
+    if(await orgsSave([...ORGS,v])){if(i)i.value='';toast(`${uname(v)} is now an organiser`,3000)}return}
+  if(t.dataset&&t.dataset.orgdel){const v=t.dataset.orgdel;if(v===String(user?.email||'').toLowerCase())return;
+    if(t.dataset.arm!=='1'){t.dataset.arm='1';t.textContent='Tap again';t.classList.replace('ghost','warn');setTimeout(()=>{if(t.isConnected){t.dataset.arm='';t.textContent='Remove';t.classList.replace('warn','ghost')}},4000);return}
+    if(await orgsSave(ORGS.filter(x=>x!==v)))toast(`${uname(v)} is no longer an organiser`,3000);return}
   if(t.id==='pclear'){e.preventDefault();await clearPairs(t);return}
   if(t.dataset&&t.dataset.dsize){dsizeSet=+t.dataset.dsize;document.querySelectorAll('#dsize [data-dsize]').forEach(b=>b.classList.toggle('on',+b.dataset.dsize===dsz()));const w=$('dwhat');if(w)w.textContent=dsz()===4?'Draw teams of 4':'Draw pairs';buzz();return}
   if(t.closest&&t.closest('#fmtbox')&&fmtClick(t))return;
@@ -2337,16 +2370,17 @@ setInterval(()=>{if(view==='board'&&!document.hidden)renderBoard()},30000);
 // ---------- start ----------
 async function start(){
   if(LOCAL){
-    $('banner').innerHTML=`<div class="banner"><b>Demo mode.</b> Not connected to Firebase yet. Anything entered stays on this phone only. Any PIN unlocks.</div>`;
-    net('demo');R={...structuredClone(DEF),...ls.get('gs-demo-R',{})};S=ls.get('gs-demo-S',{});C=ls.get('gs-demo-C',{});P=ls.get('gs-demo-P',P);eclFollow();render();ready=true;live=true;
-    addEventListener('storage',e=>{if(e.key==='gs-demo-C'){C=ls.get('gs-demo-C',{});teamCheck(true);if(view==='score')render('scores')}else if(e.key==='gs-demo-S')applyScores(ls.get('gs-demo-S',{}));else if(e.key==='gs-demo-R'){R={...structuredClone(DEF),...ls.get('gs-demo-R',{})};render('round')}else if(e.key==='gs-demo-P'){P=ls.get('gs-demo-P',P);render('roster')}else if(e.key==='gs-demo-L'){lockSet(ls.get('gs-demo-L',null));lockChanged()}else if(e.key==='gs-demo-E-'+eclLiveY){ECcur=ls.get(e.key,{});if(eclY===eclLiveY){EC=ECcur;if(view==='ecl')renderEcl()}}});
+    $('banner').innerHTML=`<div class="banner"><b>Demo mode.</b> Not connected to Firebase yet. Anything entered stays on this phone only. Any PIN or password unlocks.</div>`;
+    ORGS=orgsClean(ls.get('gs-demo-O',[]));net('demo');R={...structuredClone(DEF),...ls.get('gs-demo-R',{})};S=ls.get('gs-demo-S',{});C=ls.get('gs-demo-C',{});P=ls.get('gs-demo-P',P);eclFollow();render();ready=true;live=true;
+    addEventListener('storage',e=>{if(e.key==='gs-demo-C'){C=ls.get('gs-demo-C',{});teamCheck(true);if(view==='score')render('scores')}else if(e.key==='gs-demo-S')applyScores(ls.get('gs-demo-S',{}));else if(e.key==='gs-demo-R'){R={...structuredClone(DEF),...ls.get('gs-demo-R',{})};render('round')}else if(e.key==='gs-demo-P'){P=ls.get('gs-demo-P',P);render('roster')}else if(e.key==='gs-demo-L'){lockSet(ls.get('gs-demo-L',null));lockChanged()}else if(e.key==='gs-demo-O'){ORGS=orgsClean(ls.get('gs-demo-O',[]));render()}else if(e.key==='gs-demo-E-'+eclLiveY){ECcur=ls.get(e.key,{});if(eclY===eclLiveY){EC=ECcur;if(view==='ecl')renderEcl()}}});
     return}
   try{
     const [appM,fsM,auM]=await Promise.all([import(SDK+'firebase-app.js'),import(SDK+'firebase-firestore.js'),import(SDK+'firebase-auth.js')]);
     fs=fsM;au=auM;const app=appM.initializeApp(firebaseConfig);
     try{db=fs.initializeFirestore(app,{localCache:fs.persistentLocalCache({tabManager:fs.persistentMultipleTabManager()})})}catch{db=fs.getFirestore(app)}
     auth=au.getAuth(app);
-    au.onAuthStateChanged(auth,u=>{user=u&&(u.email===EMAIL||u.email===ADMIN)?u:null;if(user)teamCheck(scFresh);else eform=null;render()});
+    au.onAuthStateChanged(auth,u=>{user=u&&u.email?u:null;if(user)teamCheck(scFresh);else eform=null;render()});
+    fs.onSnapshot(fs.doc(db,'rounds','organisers'),d=>{const was=isAdmin();ORGS=orgsClean(d.exists()?d.data().emails:[]);if(was!==isAdmin())render();else{const o=$('orgs');if(o)o.innerHTML=orgsHtml()}},()=>{});
     const slow=setTimeout(()=>net('off'),10000);setTimeout(()=>{ready=true},8000);
     fs.onSnapshot(fs.doc(db,'rounds','setup-lock'),d=>{lockSet(d.exists()?d.data():null);lockChanged()},()=>{});
     fs.onSnapshot(fs.doc(db,'rounds','roster'),s=>{const d=s.exists()&&s.data().players;if(Array.isArray(d)&&d.length){P=d;render('roster')}},()=>{});

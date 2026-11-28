@@ -102,6 +102,12 @@ const firebaseConfig = {
 };
 const LOCAL = !firebaseConfig;
 const ADMIN = 'admin@sifah.golf', SCORER = 'scorer@sifah.golf';
+// one login for the whole app: typed as just the username (bradley = bradley@sifah.golf). Organisers: admin@ always, plus the list
+// organisers keep in the scores app's Setup (rounds/organisers).
+const acct = v => { v = String(v || '').trim().toLowerCase().replace(/\s+/g, ''); return !v ? '' : v.includes('@') ? v : v + '@sifah.golf' };
+const uname = e => String(e || '').replace(/@sifah\.golf$/i, '');
+const orgsClean = a => Array.isArray(a) ? a.filter(x => typeof x === 'string').map(acct).filter(x => x !== SCORER) : [];
+let ORGS = [];
 const SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
 // Official ratings: Emirates Golf Federation course handicap tables for Al Sifah Resort Golf Club. Those are 18-hole figures for the
 // nine played twice (par 72); a 9-hole round uses half the Course Rating and the same Slope (doubled again for "18 holes, twice round").
@@ -139,9 +145,13 @@ const store = {
     if (LOCAL) { const u = sessionStorage.getItem('hc-demo-user'); onUser(u ? { uid: u, email: u } : null); return }
     const [appM, fsM, auM] = await Promise.all([import(SDK + 'firebase-app.js'), import(SDK + 'firebase-firestore.js'), import(SDK + 'firebase-auth.js')]);
     fs = fsM; au = auM;
-    const app = appM.initializeApp(firebaseConfig, 'handicaps');   // its own named app: a player's login here never unlocks the live scores app (and the scorer login never shows up here)
+    const app = appM.initializeApp(firebaseConfig);   // the same (default) app as the scores page, so one sign-in covers both
     db = fs.getFirestore(app); auth = au.getAuth(app);
     au.onAuthStateChanged(auth, u => onUser(u ? { uid: u.uid, email: (u.email || '').toLowerCase() } : null));
+  },
+  async organisers() {
+    if (LOCAL) return orgsClean(ls.get('gs-demo-O', []));
+    try { const d = await fs.getDoc(fs.doc(db, 'rounds', 'organisers')); return orgsClean(d.exists() ? d.data().emails : []) } catch { return [] }
   },
   async signIn(email, pw) {
     if (LOCAL) { if (!DEMO_USERS.includes(email)) throw new Error('Demo: use one of the demo accounts'); sessionStorage.setItem('hc-demo-user', email); return { uid: email, email } }
@@ -208,11 +218,13 @@ function cleanCourse(c) {
 
 // ---------- state ----------
 let user = null, view = 'me', P = {}, C = [], mine = [], others = {}, roster = [], openPlayer = null, postFor = null, armed = {}, editCourse = null;
-const isAdmin = () => !!user && user.email === ADMIN;
+const isAdmin = () => !!user && (user.email === ADMIN || ORGS.includes(user.email));
+const isScorer = () => !!user && user.email === SCORER;   // the shared scorer PIN login has no handicap record
 const me = () => user && P[user.uid];
 const recOf = (scores, prof) => W.computeRecord(scores, { startHI: prof && prof.startHI, today: today() });
 
 async function loadAll() {
+  ORGS = await store.organisers(); if (isScorer()) { P = {}; mine = []; return }
   [P, C, roster] = await Promise.all([store.profiles(), store.courses(), store.roster()]);
   mine = user && P[user.uid] ? await store.scores(user.uid) : [];
 }
@@ -223,7 +235,7 @@ async function refreshCache(uid) {       // keep the player's Index on their pro
 
 // ---------- views ----------
 function tabs() {
-  const t = !user ? [] : isAdmin() ? [['players', 'Players'], ['post', 'Post for a player'], ['courses', 'Courses']] : !me() ? [] : [['me', 'My Index'], ['post', 'Post a score'], ['players', 'Players'], ['courses', 'Courses']];
+  const t = !user || isScorer() ? [] : me() ? [['me', 'My Index'], ['post', 'Post a score'], ['players', 'Players'], ['courses', 'Courses']] : isAdmin() && (user.email === ADMIN || skipWho()) ? [['players', 'Players'], ['post', 'Post for a player'], ['courses', 'Courses']] : [];
   $('tabs').innerHTML = t.map(([v, n]) => `<button data-v="${v}" class="${v === view ? 'on' : ''}">${n}</button>`).join('');
   $('tabs').hidden = !t.length;
 }
@@ -231,29 +243,35 @@ function render() {
   tabs(); const m = $('main');
   const demo = LOCAL ? `<div class="demo"><b>Demo mode.</b> Scores are kept on this phone only. Jebel Sifah has its official ratings; Ghala Valley is a made-up example.</div>` : '';
   if (!user) { m.innerHTML = demo + signInHtml(); return }
-  if (!isAdmin() && !me()) { m.innerHTML = demo + whoHtml(); return }
-  if (isAdmin() && view === 'me') view = 'players';
+  if (isScorer()) { m.innerHTML = demo + scorerHtml(); return }
+  if (!me() && !(isAdmin() && (user.email === ADMIN || skipWho()))) { m.innerHTML = demo + whoHtml(); return }
+  if (!me() && view === 'me') view = 'players';
   m.innerHTML = demo + (view === 'me' ? meHtml() : view === 'post' ? postHtml() : view === 'players' ? playersHtml() : coursesHtml()) + accountHtml();
   if (view === 'post') postCalc();
 }
+const skipWho = () => { try { return sessionStorage.getItem('hc-skip-who') === (user && user.uid) } catch { return false } };
+function scorerHtml() {
+  return `<div class="panel"><h2>Use your own login</h2><p class="note" style="margin:0 0 6px">This phone is signed in with the shared scorer PIN, which has no handicap record. Sign out, then sign in with your own username and password. Signing out here also signs this phone out of scoring until someone signs in again.</p>
+    <button class="btn wide" id="out" type="button">Sign out</button></div>`;
+}
 function signInHtml() {
-  return `<div class="panel"><h2>Sign in</h2><p class="note" style="margin:0 0 6px">Use the email and password the organiser gave you. This is your own login: only you (and the organisers) can post scores to your record.</p>
-    <form id="signin"><label for="em">Email</label><input id="em" type="email" autocomplete="username" required ${LOCAL ? 'list="demousers"' : ''}>
+  return `<div class="panel"><h2>Sign in</h2><p class="note" style="margin:0 0 6px">Use the username and password the organiser gave you, the same login as for scoring. Only you (and the organisers) can post scores to your record.</p>
+    <form id="signin"><label for="em">Username</label><input id="em" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="e.g. bradley" required ${LOCAL ? 'list="demousers"' : ''}>
     ${LOCAL ? `<datalist id="demousers">${DEMO_USERS.map(u => `<option value="${u}">`).join('')}</datalist>` : ''}
     <label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password" ${LOCAL ? '' : 'required'}>
     <button class="btn wide" type="submit">Sign in</button></form>
-    ${LOCAL ? `<p class="note">Demo accounts: ${DEMO_USERS.map(esc).join(', ')} (any password). admin@ is the organiser.</p>` : `<button class="btn ghost wide" id="forgot" type="button">Forgot password</button>`}</div>`;
+    ${LOCAL ? `<p class="note">Demo accounts: ${DEMO_USERS.map(esc).join(', ')} (any password). admin@ is the organiser.</p>` : `<p class="note">Forgot your password? Ask an organiser to reset it.</p>`}</div>`;
 }
 function whoHtml() {
   const taken = new Set(Object.values(P).map(p => (p.name || '').toLowerCase()));
   return `<div class="panel"><h2>Who are you?</h2><p class="note" style="margin:0">Pick your name as it appears on the Friday player list, so your handicap lines up with the team draw.</p>
     <label for="who">Your name</label><input id="who" list="rosterl" autocomplete="name">
     <datalist id="rosterl">${roster.filter(n => !taken.has(n.toLowerCase())).map(n => `<option value="${esc(n)}">`).join('')}</datalist>
-    <button class="btn wide" id="whosave" type="button">Continue</button><button class="btn ghost wide" id="out" type="button">Sign out</button></div>`;
+    <button class="btn wide" id="whosave" type="button">Continue</button>${isAdmin() ? `<button class="btn ghost wide" id="whoskip" type="button">Skip: organiser tools only</button>` : ''}<button class="btn ghost wide" id="out" type="button">Sign out</button></div>`;
 }
 function accountHtml() {
-  return `<div class="panel"><h2>Account</h2><p class="note" style="margin:0">Signed in as ${esc(user.email)}${isAdmin() ? ' (organiser)' : ''}.</p>
-    ${LOCAL || isAdmin() ? '' : `<details style="margin-top:8px"><summary style="cursor:pointer;font-weight:600">Change password</summary><label for="npw">New password (6+ characters)</label><input id="npw" type="password" autocomplete="new-password"><button class="btn ghost wide" id="setpw" type="button">Save new password</button></details>`}
+  return `<div class="panel"><h2>Account</h2><p class="note" style="margin:0">Signed in as ${esc(uname(user.email))}${isAdmin() ? ' (organiser)' : ''}. The same login works for scoring.</p>
+    ${LOCAL || user.email === ADMIN ? '' : `<details style="margin-top:8px"><summary style="cursor:pointer;font-weight:600">Change password</summary><label for="npw">New password (6+ characters)</label><input id="npw" type="password" autocomplete="new-password"><button class="btn ghost wide" id="setpw" type="button">Save new password</button></details>`}
     <button class="btn ghost wide" id="out" type="button">Sign out</button></div>`;
 }
 function chipsFor(r) {
@@ -332,7 +350,7 @@ function postSpec() { const c = C.find(x => x.id === post.course) || C[0]; if (!
 function postHtml() {
   if (!post.date) post.date = today();
   const ps = postSpec(); if (!ps) return `<div class="panel">No courses yet.</div>`;
-  const { c, tee, play, spec } = ps, who = isAdmin() ? postFor : user.uid;
+  const { c, tee, play, spec } = ps, who = postWho();
   const players = Object.entries(P).sort((a, b) => (a[1].name || '').localeCompare(b[1].name || ''));
   const plays = c.holes === 9 ? [['9', '9 holes'], ['9x2', '18 holes (twice round)']] : [['18', '18 holes'], ['front', 'Front 9'], ['back', 'Back 9']];
   const g = post.gross[gkey()] || {};
@@ -363,7 +381,7 @@ function postScore() {      // the score being entered, as whs.js wants it
   if (post.mode === 'total') s.total = post.total === '' ? NaN : +post.total; else s.gross = gross;
   return s;
 }
-function postWho() { return isAdmin() ? postFor : user.uid }
+function postWho() { return isAdmin() ? (postFor || (me() ? user.uid : null)) : user.uid }   // an organiser with their own record posts for themselves unless they pick someone
 async function postScoresFor(uid) { return uid === user.uid ? mine : (others[uid] ??= await store.scores(uid)) }
 async function postCalc() {
   const s = postScore(), uid = postWho(); if (!s) return;
@@ -391,14 +409,14 @@ async function submitPost() {
   const course = C.find(x => x.id === s.courseId); if (!course || !course.approved) errs.push('An organiser needs to check this course’s ratings before scores can be posted to it.');
   if (!LOCAL && !navigator.onLine) errs.push('No signal: posting needs internet. Try again when you have a connection.');
   if (errs.length) { e.textContent = errs.join(' '); return }
-  const doc = { ...s, id: newId() }; if (isAdmin()) doc.byName = 'organiser'; delete doc.hiBefore;
+  const doc = { ...s, id: newId() }; if (isAdmin() && uid !== user.uid) doc.byName = 'organiser'; delete doc.hiBefore;
   $('psubmit').disabled = true;
   try {
     await Promise.race([store.addScore(uid, doc), new Promise((_, no) => setTimeout(() => no(new Error('No answer from the server. Check your signal and try again.')), 15000))]);
     if (uid === user.uid) mine = await store.scores(uid); else others[uid] = await store.scores(uid);
     try { ls.set(lastTeeKey(uid, s.courseId), s.teeId) } catch {}
     await refreshCache(uid); post.gross = {}; post.total = ''; post.marker = ''; e.dataset.tried = '';
-    toast('Score posted'); if (uid === user.uid) { view = 'me' } else { view = 'players'; openPlayer = uid } render(); scrollTo(0, 0);
+    postFor = null; toast('Score posted'); if (uid === user.uid) { view = 'me' } else { view = 'players'; openPlayer = uid } render(); scrollTo(0, 0);
   } catch (err) { e.textContent = 'Not saved: ' + (err.code || err.message) } finally { const b = $('psubmit'); if (b) b.disabled = false }
 }
 // ---- courses
@@ -458,13 +476,13 @@ function courseErrors(c) {
 }
 
 // ---------- events ----------
-$('tabs').addEventListener('click', async e => { const b = e.target.closest('[data-v]'); if (!b) return; view = b.dataset.v; openPlayer = null; editCourse = null; armed = {};
+$('tabs').addEventListener('click', async e => { const b = e.target.closest('[data-v]'); if (!b) return; view = b.dataset.v; openPlayer = null; editCourse = null; armed = {}; if (view === 'post' && me()) postFor = null;   // an organiser who plays: the Post tab is for their own round
   if (view === 'players') { render(); P = await store.profiles(); await loadEveryone() } render(); scrollTo(0, 0) });
 async function loadEveryone() { const ids = Object.keys(P); const all = await Promise.all(ids.map(u => store.scores(u).catch(() => null))); ids.forEach((u, i) => { if (all[i]) others[u] = all[i] }) }
 document.addEventListener('submit', async e => { if (e.target.id !== 'signin') return; e.preventDefault();
-  const em = $('em').value.trim().toLowerCase(), pw = $('pw').value;
-  try { user = await store.signIn(em, pw); await loadAll(); view = isAdmin() ? 'players' : 'me'; if (isAdmin()) await loadEveryone(); render() }
-  catch (err) { const c = err.code || ''; toast(/invalid-credential|wrong-password|user-not-found|invalid-login/.test(c) ? 'Wrong email or password' : /network/.test(c) ? 'No signal: signing in needs internet' : (err.message || c), 3500) } });
+  const em = acct($('em').value), pw = $('pw').value;
+  try { user = await store.signIn(em, pw); await loadAll(); view = me() || !isAdmin() ? 'me' : 'players'; if (isAdmin()) await loadEveryone(); render() }
+  catch (err) { const c = err.code || ''; toast(/invalid-credential|wrong-password|user-not-found|invalid-login|invalid-email/.test(c) ? 'Wrong username or password' : /network/.test(c) ? 'No signal: signing in needs internet' : (err.message || c), 3500) } });
 document.addEventListener('input', e => { const t = e.target;
   if (t.dataset.hole != null) { const k = gkey(); (post.gross[k] ??= {})[t.dataset.hole] = t.value.toUpperCase().replace(/[^0-9P]/g, ''); t.value = post.gross[k][t.dataset.hole]; postCalc() }
   else if (t.id === 'ptotal') { post.total = t.value.replace(/\D/g, ''); t.value = post.total; postCalc() }
@@ -475,9 +493,8 @@ document.addEventListener('change', async e => { const t = e.target;
   else if (t.id === 'ptee') { post.tee = t.value; render() }
   else if (t.id === 'pfor') { postFor = t.value || null; post.gross = {}; post.total = ''; post.marker = ''; render() } });
 document.addEventListener('click', async e => { const t = e.target.closest('button,[data-open],[data-course]') || e.target; const id = t.id;
-  if (id === 'forgot') { const em = $('em').value.trim(); if (!em) { toast('Type your email first'); return }
-    try { await store.resetPassword(em); toast('Password reset email sent (check spam).', 3500) } catch { toast('Could not send a reset email. Ask an organiser to reset your password.', 4000) } return }
-  if (id === 'out') { await store.signOut(); user = null; P = {}; mine = []; others = {}; render(); return }
+  if (id === 'out') { await store.signOut(); user = null; P = {}; mine = []; others = {}; postFor = null; try { sessionStorage.removeItem('hc-skip-who') } catch {} render(); return }
+  if (id === 'whoskip' && isAdmin()) { try { sessionStorage.setItem('hc-skip-who', user.uid) } catch {} view = 'players'; await loadEveryone(); render(); return }
   if (id === 'setpw') { const pw = $('npw').value; if (pw.length < 6) { toast('At least 6 characters'); return }
     try { await store.changePassword(pw); toast('Password changed') } catch (err) { toast(/recent/.test(err.code || '') ? 'Sign out and in again, then change it.' : 'Not changed: ' + (err.code || err.message), 3500) } return }
   if (id === 'whosave') { const n = $('who').value.trim().slice(0, 40); if (!n) { toast('Type your name'); return }
@@ -516,7 +533,7 @@ document.addEventListener('click', async e => { const t = e.target.closest('butt
     try { await store.saveCourse(c); C = await store.courses(); editCourse = null; toast('Course saved'); render() } catch (err) { $('cerr').textContent = 'Not saved: ' + (err.code || err.message) } return }
 });
 
-store.init(async u => { user = u; if (u) await loadAll(); if (u && isAdmin() && view === 'me') view = 'players'; if (u && view === 'players') await loadEveryone(); render() });
+store.init(async u => { user = u; if (u) await loadAll(); if (u && isAdmin() && !me() && view === 'me') view = 'players'; if (u && view === 'players') await loadEveryone(); render() });
 </script>
 </body>
 </html>
